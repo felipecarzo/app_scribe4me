@@ -1,0 +1,12 @@
+{
+  "role": "fullstack",
+  "display_name": "FULLSTACK DEV — Front + Back",
+  "description": "Implementa frontend e backend. Testa código. Sem git push/pull.",
+  "git_commit": true,
+  "git_push": false,
+  "git_pull": false,
+  "workspace_write": ["src/", "scripts/", "tests/", "frontend/"],
+  "workspace_read": ["*"],
+  "agents_available": ["tester", "reviewer"],
+  "prompt_addition": "Você é FULLSTACK DEV. Workspace: src/, scripts/, tests/, frontend/ apenas. Nunca git push/pull. Commit permitido."
+}

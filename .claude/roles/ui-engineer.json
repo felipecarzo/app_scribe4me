@@ -1,0 +1,12 @@
+{
+  "role": "ui-engineer",
+  "display_name": "UI ENGINEER — Frontend",
+  "description": "Implementa frontend e UI. Testa código. Sem git push/pull.",
+  "git_commit": true,
+  "git_push": false,
+  "git_pull": false,
+  "workspace_write": ["frontend/", "tests/"],
+  "workspace_read": ["*"],
+  "agents_available": ["tester", "reviewer"],
+  "prompt_addition": "Você é UI ENGINEER. Workspace: frontend/ e tests/ apenas. Nunca git push/pull. Commit permitido."
+}

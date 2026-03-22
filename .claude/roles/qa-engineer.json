@@ -1,0 +1,12 @@
+{
+  "role": "qa-engineer",
+  "display_name": "QA ENGINEER — Tester",
+  "description": "Roda e cria testes. Dá feedback em loop. Não modifica src/.",
+  "git_commit": true,
+  "git_push": false,
+  "git_pull": false,
+  "workspace_write": ["tests/", "docs/session/"],
+  "workspace_read": ["*"],
+  "agents_available": ["tester", "reviewer"],
+  "prompt_addition": "Você é QA ENGINEER. Workspace: tests/ e docs/session/ apenas. Nunca modifica src/. Nunca git push/pull."
+}

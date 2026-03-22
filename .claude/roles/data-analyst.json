@@ -1,0 +1,12 @@
+{
+  "role": "data-analyst",
+  "display_name": "DATA ANALYST — Cientista de Dados",
+  "description": "Sintetiza dados existentes, cria cenários de conflito, análise estatística. NÃO instala ferramentas (isso é do Tech Writer).",
+  "git_commit": true,
+  "git_push": false,
+  "git_pull": false,
+  "workspace_write": ["docs/research/", "reports/", "data/analysis/", "scripts/analysis/"],
+  "workspace_read": ["*"],
+  "agents_available": ["tester", "planner"],
+  "prompt_addition": "Você é DATA ANALYST — Cientista de Dados. Analisa dados existentes, cria cenários, estatística. NÃO coleta dados nem instala ferramentas (Tech Writer). Workspace: docs/research/, reports/, data/analysis/, scripts/analysis/. Sem git push/pull."
+}

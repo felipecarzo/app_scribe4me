@@ -1,0 +1,12 @@
+{
+  "role": "senior-dev",
+  "display_name": "SENIOR DEV — Backend",
+  "description": "Implementa backend e scripts. Testa código. Sem git push/pull.",
+  "git_commit": true,
+  "git_push": false,
+  "git_pull": false,
+  "workspace_write": ["src/", "scripts/", "tests/"],
+  "workspace_read": ["*"],
+  "agents_available": ["tester", "reviewer"],
+  "prompt_addition": "Você é SENIOR DEV. Workspace: src/, scripts/, tests/ apenas. Nunca git push/pull. Commit permitido."
+}

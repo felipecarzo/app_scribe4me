@@ -1,0 +1,56 @@
+# Local agent mute config (per-terminal)
+.claude/muted-agents.local.json
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Role instance state (per-terminal, created by /set-role)
+.claude/instance-role.local.json
+
+# Session files (per-terminal)
+.claude/sessions/
+
+# Current session/task temp files
+.claude/current-session.tmp
+.claude/current-task.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Rust
+motor/target/
+**/*.rs.bk
+
+# Flutter
+app/.dart_tool/
+app/.packages
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python (legacy)
+__pycache__/
+*.pyc
+.venv/
+
+# Models (too large for git)
+models/
+*.onnx
+*.bin
+*.pt
+*.pth
