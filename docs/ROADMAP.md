@@ -9,7 +9,7 @@
 
 | Branch | Tipo | Ultimo commit | Estado |
 |---|---|---|---|
-| `master` | desenvolvimento ativo | `14d1727` | Setup inicial — Sprint 0 em andamento |
+| `master` | desenvolvimento ativo | `fa999c1` | Fase 1+2 completas — MVP funcional + polimento |
 
 ---
 
@@ -52,7 +52,7 @@
 |---|---|---|---|---|
 | AHK-01 | Script AHK: Win+H push-to-talk + Win+Shift+H toggle (substitui Win+H nativo) | ✅ | ORC-01, SET-03 | E2E-01 |
 | AHK-02 | Seletor de modo de saida (cursor direto vs clipboard) via config ou hotkey | ✅ | AHK-01 | E2E-01 |
-| E2E-01 | Teste end-to-end: hotkey -> gravacao -> Whisper -> texto aparece | ⏳ | AHK-01, AHK-02 | POL-01 |
+| E2E-01 | Teste end-to-end: hotkey -> gravacao -> Whisper -> texto aparece | ✅ | AHK-01, AHK-02 | POL-01 |
 
 ---
 
@@ -60,9 +60,9 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| POL-01 | Otimizacao de latencia (warm-up do modelo, CUDA tuning) | 🔒 | E2E-01 | POL-02 |
-| POL-02 | Feedback visual (tray icon ou indicador: gravando/transcrevendo/pronto) | 🔒 | POL-01 | — |
-| POL-03 | Pos-processamento de pontuacao (se Whisper large nao for suficiente) | 🔒 | E2E-01 | — |
+| POL-01 | Otimizacao de latencia (warm-up do modelo, CUDA tuning) | ✅ | E2E-01 | POL-02 |
+| POL-02 | Feedback visual (tray icon ou indicador: gravando/transcrevendo/pronto) | ✅ | POL-01 | — |
+| POL-03 | Pos-processamento de pontuacao (se Whisper large nao for suficiente) | ✅ | E2E-01 | — |
 
 ---
 
@@ -76,4 +76,4 @@
 
 ---
 
-*Ultima atualizacao: 2026-03-22 — Sprint 0 ✅, Sprint 1 ✅, Sprint 2 em progresso. AHK-01 ✅, AHK-02 ✅. Proximo: E2E-01.*
+*Ultima atualizacao: 2026-03-23 — Sprint 0 ✅, Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅. Fase 1+2 completas. Proximo: Fase 3 (extras pos-MVP).*
