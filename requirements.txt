@@ -1,0 +1,17 @@
+# app_speedosper — Speech-to-text local com Whisper
+# Python 3.12 + CUDA
+
+# Core — Whisper STT
+openai-whisper>=20240930
+
+# Audio — gravacao do microfone
+sounddevice>=0.5.1
+numpy>=1.26.0
+scipy>=1.14.0
+
+# Clipboard/input — enviar texto para cursor ativo
+pyperclip>=1.9.0
+pynput>=1.7.7
+
+# Sistema
+keyboard>=0.13.5
