@@ -20,13 +20,13 @@ class SpeedOsper:
         self._toggle_active = False
 
     def _on_push_to_talk_press(self) -> None:
-        """Win+H pressionado — inicia gravacao."""
+        """F20 press (Win+H via AHK) — inicia gravacao."""
         if not self.recorder.is_recording:
             print("[speedosper] Gravando (push-to-talk)...")
             self.recorder.start()
 
     def _on_push_to_talk_release(self) -> None:
-        """Win+H solto — para gravacao e transcreve."""
+        """F20 release (Win+H solto via AHK) — para e transcreve."""
         if self.recorder.is_recording:
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
@@ -37,7 +37,7 @@ class SpeedOsper:
                 print("[speedosper] Nenhum texto detectado.")
 
     def _on_toggle(self) -> None:
-        """Win+Shift+H — alterna gravacao on/off."""
+        """F21 (Win+Shift+H via AHK) — alterna gravacao on/off."""
         if not self._toggle_active:
             self._toggle_active = True
             print("[speedosper] Gravando (toggle ON)...")
@@ -57,34 +57,23 @@ class SpeedOsper:
         print("[speedosper] Carregando modelo Whisper...")
         self.transcriber.load_model()
 
-        print(f"[speedosper] Pronto!")
-        print(f"  Push-to-talk: {self.config.hotkey_push_to_talk} (segura e fala)")
-        print(f"  Toggle:       {self.config.hotkey_toggle} (aperta pra iniciar/parar)")
+        print("[speedosper] Pronto!")
+        print("  Push-to-talk: Win+H (segura e fala)")
+        print("  Toggle:       Win+Shift+H (aperta pra iniciar/parar)")
         print(f"  Saida:        {self.config.output_mode}")
-        print(f"  Sair:         Ctrl+Q")
+        print("  Sair:         Ctrl+Q")
+        print()
+        print("  IMPORTANTE: rode scripts/speedosper.ahk antes!")
 
-        # Push-to-talk: Win+H — segura pra gravar, solta pra transcrever
-        # suppress=True bloqueia o Win+H nativo do Windows
-        keyboard.add_hotkey(
-            self.config.hotkey_push_to_talk,
-            self._on_push_to_talk_press,
-            suppress=True,
-            trigger_on_release=False,
-        )
-        keyboard.on_release_key(
-            "h",
-            lambda e: self._on_push_to_talk_release(),
-        )
+        # Push-to-talk: F20 down/up (enviado pelo AHK quando Win+H e pressionado/solto)
+        keyboard.on_press_key(self.config.hotkey_push_to_talk, lambda e: self._on_push_to_talk_press())
+        keyboard.on_release_key(self.config.hotkey_push_to_talk, lambda e: self._on_push_to_talk_release())
 
-        # Toggle: Win+Shift+H
-        keyboard.add_hotkey(
-            self.config.hotkey_toggle,
-            self._on_toggle,
-            suppress=True,
-        )
+        # Toggle: F21 (enviado pelo AHK quando Win+Shift+H e pressionado)
+        keyboard.on_press_key(self.config.hotkey_toggle, lambda e: self._on_toggle())
 
         # Sair com Ctrl+Q
-        print("\n[speedosper] Aguardando hotkey...")
+        print("[speedosper] Aguardando hotkey...")
         keyboard.wait("ctrl+q")
         print("[speedosper] Encerrando.")
 

@@ -1,15 +1,20 @@
-; speedosper.ahk — Bloqueia Win+H nativo do Windows
-; O app Python (main.py) captura Win+H via lib keyboard.
-; Este script e uma camada extra para garantir que o
-; Windows Voice Typing nao ative junto.
+; speedosper.ahk — Intercepta Win+H e redireciona para o app Python
+; O AHK bloqueia o Win+H nativo e envia F20/F21 como teclas internas.
+; O app Python escuta F20 (push-to-talk) e F21 (toggle).
 ;
-; Como usar: rodar este .ahk ANTES de iniciar o app Python.
-; Requer AutoHotKey v2 instalado.
+; Requer AutoHotkey v2.0+
+; Rodar ANTES de iniciar o app Python.
 
 #Requires AutoHotkey v2.0
 
-; Bloqueia Win+H nativo (Windows Voice Typing)
-#h::return
+; Win+H pressionado -> envia F20 down
+#h::{
+    Send "{F20 down}"
+    KeyWait "h"
+    Send "{F20 up}"
+}
 
-; Bloqueia Win+Shift+H nativo (se existir)
-#+h::return
+; Win+Shift+H -> envia F21 (toggle, so precisa do press)
+#+h::{
+    Send "{F21}"
+}

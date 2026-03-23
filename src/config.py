@@ -10,9 +10,9 @@ class Config:
     language: str = "pt"
     device: str = "cuda"
 
-    # Hotkey
-    hotkey_push_to_talk: str = "windows+h"
-    hotkey_toggle: str = "windows+shift+h"
+    # Hotkey (teclas internas — AHK traduz Win+H -> F20, Win+Shift+H -> F21)
+    hotkey_push_to_talk: str = "f20"
+    hotkey_toggle: str = "f21"
 
     # Saida
     # "cursor" = cola direto no cursor ativo (simula digitacao)
