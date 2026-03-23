@@ -12,6 +12,7 @@ from src.config import Config
 from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
+from src.tray import TrayIcon, AppState
 
 
 class SpeedOsper:
@@ -24,17 +25,26 @@ class SpeedOsper:
         self.output = OutputHandler(self.config)
         self._toggle_active = False
         self._ahk_process: subprocess.Popen | None = None
+        self._tray = TrayIcon(on_quit=self._request_quit)
+        self._quit_requested = False
+
+    def _request_quit(self) -> None:
+        """Callback do tray icon para encerrar."""
+        self._quit_requested = True
+        keyboard.press_and_release("ctrl+q")
 
     def _on_push_to_talk_press(self) -> None:
         """F20 press (Win+H via AHK) — inicia gravacao."""
         if not self.recorder.is_recording:
             print("[speedosper] Gravando (push-to-talk)...")
+            self._tray.set_state(AppState.RECORDING)
             self.recorder.start()
 
     def _on_push_to_talk_release(self) -> None:
         """F20 release (Win+H solto via AHK) — para e transcreve."""
         if self.recorder.is_recording:
             t0 = time.perf_counter()
+            self._tray.set_state(AppState.TRANSCRIBING)
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
@@ -45,16 +55,19 @@ class SpeedOsper:
                 print(f"    ({elapsed:.1f}s total)\n")
             else:
                 print("[speedosper] Nenhum texto detectado.")
+            self._tray.set_state(AppState.IDLE)
 
     def _on_toggle(self) -> None:
         """F21 (Win+Shift+H via AHK) — alterna gravacao on/off."""
         if not self._toggle_active:
             self._toggle_active = True
+            self._tray.set_state(AppState.RECORDING)
             print("[speedosper] Gravando (toggle ON)...")
             self.recorder.start()
         else:
             self._toggle_active = False
             t0 = time.perf_counter()
+            self._tray.set_state(AppState.TRANSCRIBING)
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
@@ -65,6 +78,7 @@ class SpeedOsper:
                 print(f"    ({elapsed:.1f}s total)\n")
             else:
                 print("[speedosper] Nenhum texto detectado.")
+            self._tray.set_state(AppState.IDLE)
 
     def _start_ahk(self) -> None:
         """Lanca o script AHK automaticamente."""
@@ -97,6 +111,7 @@ class SpeedOsper:
     def run(self) -> None:
         """Inicia o loop principal com hotkeys."""
         self._start_ahk()
+        self._tray.start()
 
         print("[speedosper] Carregando modelo Whisper...")
         self.transcriber.load_model()
@@ -119,6 +134,7 @@ class SpeedOsper:
         print("[speedosper] Aguardando hotkey...")
         keyboard.wait("ctrl+q")
         print("[speedosper] Encerrando.")
+        self._tray.stop()
 
         if self.recorder.is_recording:
             self.recorder.stop()
