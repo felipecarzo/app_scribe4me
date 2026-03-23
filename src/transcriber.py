@@ -40,5 +40,6 @@ class Transcriber:
             audio,
             language=self.config.language,
             fp16=(self.config.device == "cuda"),
+            initial_prompt="Olá, tudo bem? Sim, estou trabalhando no projeto. Vamos resolver isso agora, ok? Preciso que você faça o seguinte: primeiro, abra o arquivo; depois, edite a configuração.",
         )
         return result["text"].strip()

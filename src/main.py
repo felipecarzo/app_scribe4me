@@ -32,6 +32,7 @@ class SpeedOsper:
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
             if text:
+                print(f"\n>>> {text}\n")
                 self.output.send(text)
             else:
                 print("[speedosper] Nenhum texto detectado.")
@@ -48,6 +49,7 @@ class SpeedOsper:
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
             if text:
+                print(f"\n>>> {text}\n")
                 self.output.send(text)
             else:
                 print("[speedosper] Nenhum texto detectado.")
