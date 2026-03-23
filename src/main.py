@@ -1,6 +1,10 @@
 """Orquestrador: hotkey -> grava -> transcreve -> cola."""
 
+import atexit
+import subprocess
 import sys
+from pathlib import Path
+
 import keyboard
 
 from src.config import Config
@@ -18,6 +22,7 @@ class SpeedOsper:
         self.transcriber = Transcriber(self.config)
         self.output = OutputHandler(self.config)
         self._toggle_active = False
+        self._ahk_process: subprocess.Popen | None = None
 
     def _on_push_to_talk_press(self) -> None:
         """F20 press (Win+H via AHK) — inicia gravacao."""
@@ -54,8 +59,33 @@ class SpeedOsper:
             else:
                 print("[speedosper] Nenhum texto detectado.")
 
+    def _start_ahk(self) -> None:
+        """Lanca o script AHK automaticamente."""
+        ahk_script = Path(__file__).parent.parent / "scripts" / "speedosper.ahk"
+        if not ahk_script.exists():
+            print(f"[speedosper] AVISO: {ahk_script} nao encontrado. Win+H pode nao funcionar.")
+            return
+
+        try:
+            self._ahk_process = subprocess.Popen(
+                ["autohotkey", str(ahk_script)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            atexit.register(self._stop_ahk)
+            print("[speedosper] AHK iniciado (Win+H interceptado).")
+        except FileNotFoundError:
+            print("[speedosper] AVISO: AutoHotkey nao encontrado no PATH. Instale com: winget install AutoHotkey.AutoHotkey")
+
+    def _stop_ahk(self) -> None:
+        """Encerra o processo AHK."""
+        if self._ahk_process and self._ahk_process.poll() is None:
+            self._ahk_process.terminate()
+
     def run(self) -> None:
         """Inicia o loop principal com hotkeys."""
+        self._start_ahk()
+
         print("[speedosper] Carregando modelo Whisper...")
         self.transcriber.load_model()
 
@@ -64,8 +94,6 @@ class SpeedOsper:
         print("  Toggle:       Win+Shift+H (aperta pra iniciar/parar)")
         print(f"  Saida:        {self.config.output_mode}")
         print("  Sair:         Ctrl+Q")
-        print()
-        print("  IMPORTANTE: rode scripts/speedosper.ahk antes!")
 
         # Push-to-talk: F20 down/up (enviado pelo AHK quando Win+H e pressionado/solto)
         keyboard.on_press_key(self.config.hotkey_push_to_talk, lambda e: self._on_push_to_talk_press())
