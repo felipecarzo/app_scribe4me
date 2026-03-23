@@ -61,7 +61,12 @@ class SpeedOsper:
 
     def _start_ahk(self) -> None:
         """Lanca o script AHK automaticamente."""
-        ahk_script = Path(__file__).parent.parent / "scripts" / "speedosper.ahk"
+        # PyInstaller empacota em _MEIPASS; em dev, usa o caminho normal
+        if getattr(sys, "frozen", False):
+            base = Path(sys._MEIPASS)
+        else:
+            base = Path(__file__).parent.parent
+        ahk_script = base / "scripts" / "speedosper.ahk"
         if not ahk_script.exists():
             print(f"[speedosper] AVISO: {ahk_script} nao encontrado. Win+H pode nao funcionar.")
             return

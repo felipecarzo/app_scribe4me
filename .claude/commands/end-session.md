@@ -3,7 +3,7 @@ name: end-session
 description: Encerra a sessão de trabalho — verifica documentação, atualiza HANDOFF, faz commit e push
 ---
 
-Você é o Scrum Master do projeto Speedosper. Seu papel é garantir que nenhuma informação importante fique para trás ao encerrar uma sessão. Execute cada passo em ordem, sem pular.
+Você é o Scrum Master do projeto {{PROJECT_NAME}}. Seu papel é garantir que nenhuma informação importante fique para trás ao encerrar uma sessão. Execute cada passo em ordem, sem pular.
 
 ---
 
@@ -65,7 +65,7 @@ Leia o arquivo. Verifique se contém **informação atual** (não da sessão ant
 
 ## PASSO 5 — Verificação do MEMORY.md
 
-Leia `~/.claude/projects/D--Documentos-Ti-projetos-app_speedosper/memory/MEMORY.md`. Verifique:
+Leia `~/.claude/projects/{{PROJECT_PATH_SLUG}}/memory/MEMORY.md`. Verifique:
 
 - [ ] O estado do Sprint (seção "Próximo Passo") reflete o que foi concluído hoje?
 - [ ] Algum aprendizado estável desta sessão (nova armadilha, nova convenção) precisa ser registrado?
@@ -79,13 +79,67 @@ Leia `~/.claude/projects/D--Documentos-Ti-projetos-app_speedosper/memory/MEMORY.
 
 Leia os arquivos presentes em `docs/chitchat/`. Verifique:
 
-- [ ] `claudio-implementations.md`: reflete o fluxo atual do Claudio (agentes, protocolo de handoff, armadilhas)?
-- [ ] `antigravity-implementations.md`: reflete o protocolo atual do Antigravity?
+- [ ] `claudio-implementations.md`: reflete o fluxo atual do {{AGENT_A_NAME}} (agentes, protocolo de handoff, armadilhas)?
+- [ ] `antigravity-implementations.md`: reflete o protocolo atual do {{AGENT_B_NAME}}?
 - [ ] `multi-integration.md` (se existir): está sincronizado com mudanças nos outros dois?
 
 **Se algo ficou desatualizado nesta sessão** (novo protocolo, nova regra, nova armadilha descoberta): registre na seção de histórico/registro do documento correspondente.
 
 **Critério de atualização:** só atualize se algo realmente mudou no protocolo — não adicione ruído.
+
+---
+
+## PASSO 6.5 — Sincronizar com o vault (Second Brain)
+
+Atualize a nota do projeto no vault do Felipe para que ele saiba o que precisa fazer como **ser humano** na próxima sessão.
+
+### 6.5.1 — Identificar a nota PRJ
+
+Busque em `D:\secondbrain\vault\notes\` por um arquivo que contenha no frontmatter `projeto_path` ou cujo nome corresponda a `PRJ — {{PROJECT_NAME}}*`. Se não encontrar, busque por slug parcial.
+
+Se a nota PRJ **não existir**, crie uma nova seguindo o padrão das existentes.
+
+### 6.5.2 — Extrair ações do Felipe (humano)
+
+Leia o HANDOFF que acabou de ser atualizado e o ROADMAP. Identifique **ações que o Felipe precisa fazer pessoalmente**, por exemplo:
+
+- Testar uma feature no browser/app
+- Abrir um programa, configurar algo no PC
+- Criar uma conta, gerar API key, configurar serviço externo
+- Revisar visualmente algo (UI, layout, responsividade)
+- Aprovar algo antes do Claude continuar
+- Dar feedback sobre algo implementado
+
+**Não incluir** tarefas que o Claude faz sozinho (implementar feature, escrever testes, refatorar código). Essas ficam no HANDOFF/ROADMAP do projeto.
+
+### 6.5.3 — Extrair estado atual do projeto
+
+Do HANDOFF e ROADMAP, extraia:
+- Sprint atual e status
+- Última coisa feita nesta sessão (1 frase)
+- Próxima task do roadmap
+- Bloqueios (se houver)
+
+### 6.5.4 — Atualizar a nota PRJ no vault
+
+Use Edit para atualizar o arquivo `PRJ — *.md` encontrado. Sobrescreva as seções:
+
+**Status** — com o estado real atual (sprint, o que foi feito, bloqueios)
+
+**Ações do Felipe** — seção nova ou atualizada com checklist:
+```markdown
+## Ações do Felipe
+- [ ] {ação humana 1}
+- [ ] {ação humana 2}
+```
+
+**Próximos passos** — atualizar com as próximas tasks do roadmap
+
+**Último commit** — atualizar com hash e data do commit desta sessão
+
+### 6.5.5 — Verificar Kanban de Projetos
+
+Leia `D:\secondbrain\vault\kanban\Kanban — Projetos.md`. Se o card deste projeto estiver numa coluna que não reflete mais a realidade (ex: projeto avançou de "Protótipo" para "Desenvolvimento Ativo"), mova o card para a coluna correta.
 
 ---
 
@@ -101,6 +155,10 @@ Diário:          ✅ completo / ⚠️ completado agora / ❌ problema encontra
 HANDOFF:         ✅ atualizado / ⚠️ corrigido agora / ❌ problema encontrado
 MEMORY.md:       ✅ sem mudanças / ⚠️ atualizado / ❌ problema encontrado
 Chitchat docs:   ✅ sem mudanças / ⚠️ atualizado / ❌ problema encontrado
+Vault (PRJ):     ✅ sincronizado / ⚠️ nota criada / ❌ problema encontrado
+
+Ações do Felipe para próxima sessão:
+- <lista das ações humanas extraídas no Passo 6.5>
 
 Arquivos a commitar:
 - <lista dos arquivos que serão incluídos no commit>
@@ -129,7 +187,7 @@ Mensagem de commit padrão:
 ```
 docs(session): encerramento <YYYY-MM-DD> — <resumo do que foi feito hoje>
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: {{AGENT_A_CO_AUTHOR}}
 ```
 
 Após o commit:

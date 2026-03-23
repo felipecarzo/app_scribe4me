@@ -29,9 +29,9 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| SET-01 | Criar estrutura de pastas (src/, scripts/) e requirements.txt | ⏳ | — | SET-02, SET-03 |
-| SET-02 | Configurar ambiente Python (venv, instalar whisper + dependencias) | 🔒 | SET-01 | REC-01 |
-| SET-03 | Criar config.py (modelo large, idioma pt, hotkey Ctrl+H, modos de saida) | 🔒 | SET-01 | REC-01, TRS-01, AHK-01 |
+| SET-01 | Criar estrutura de pastas (src/, scripts/) e requirements.txt | ✅ | — | SET-02, SET-03 |
+| SET-02 | Configurar ambiente Python (venv, instalar whisper + dependencias) | ✅ | SET-01 | REC-01 |
+| SET-03 | Criar config.py (modelo large, idioma pt, hotkey Ctrl+H, modos de saida) | ✅ | SET-01 | REC-01, TRS-01, AHK-01 |
 
 ---
 
@@ -39,10 +39,10 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| REC-01 | Gravacao de audio do microfone (recorder.py) — start/stop controlado | 🔒 | SET-02, SET-03 | TRS-01 |
-| TRS-01 | Transcricao com Whisper large, pt-BR, pontuacao real (transcriber.py) | 🔒 | REC-01 | OUT-01 |
-| OUT-01 | Saida de texto — dois modos: colar no cursor OU copiar pro clipboard (clipboard.py) | 🔒 | TRS-01 | ORC-01 |
-| ORC-01 | Orquestrador main.py — conecta gravacao -> transcricao -> saida | 🔒 | OUT-01 | AHK-01 |
+| REC-01 | Gravacao de audio do microfone (recorder.py) — start/stop controlado | ✅ | SET-02, SET-03 | TRS-01 |
+| TRS-01 | Transcricao com Whisper large, pt-BR, pontuacao real (transcriber.py) | ✅ | REC-01 | OUT-01 |
+| OUT-01 | Saida de texto — dois modos: colar no cursor OU copiar pro clipboard (clipboard.py) | ✅ | TRS-01 | ORC-01 |
+| ORC-01 | Orquestrador main.py — conecta gravacao -> transcricao -> saida | ✅ | OUT-01 | AHK-01 |
 
 ---
 
@@ -50,9 +50,9 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| AHK-01 | Script AHK: Ctrl+H push-to-talk + segunda hotkey toggle | 🔒 | ORC-01, SET-03 | E2E-01 |
-| AHK-02 | Seletor de modo de saida (cursor direto vs clipboard) via config ou hotkey | 🔒 | AHK-01 | E2E-01 |
-| E2E-01 | Teste end-to-end: hotkey -> gravacao -> Whisper -> texto aparece | 🔒 | AHK-01, AHK-02 | POL-01 |
+| AHK-01 | Script AHK: Win+H push-to-talk + Win+Shift+H toggle (substitui Win+H nativo) | ✅ | ORC-01, SET-03 | E2E-01 |
+| AHK-02 | Seletor de modo de saida (cursor direto vs clipboard) via config ou hotkey | ✅ | AHK-01 | E2E-01 |
+| E2E-01 | Teste end-to-end: hotkey -> gravacao -> Whisper -> texto aparece | ⏳ | AHK-01, AHK-02 | POL-01 |
 
 ---
 
@@ -76,4 +76,4 @@
 
 ---
 
-*Ultima atualizacao: 2026-03-22 — Sprint 0, nenhuma task iniciada. Proximo: SET-01.*
+*Ultima atualizacao: 2026-03-22 — Sprint 0 ✅, Sprint 1 ✅, Sprint 2 em progresso. AHK-01 ✅, AHK-02 ✅. Proximo: E2E-01.*
