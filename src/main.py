@@ -20,13 +20,13 @@ class SpeedOsper:
         self._toggle_active = False
 
     def _on_push_to_talk_press(self) -> None:
-        """Ctrl+H pressionado — inicia gravacao."""
+        """Win+H pressionado — inicia gravacao."""
         if not self.recorder.is_recording:
             print("[speedosper] Gravando (push-to-talk)...")
             self.recorder.start()
 
     def _on_push_to_talk_release(self) -> None:
-        """Ctrl+H solto — para gravacao e transcreve."""
+        """Win+H solto — para gravacao e transcreve."""
         if self.recorder.is_recording:
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
@@ -37,7 +37,7 @@ class SpeedOsper:
                 print("[speedosper] Nenhum texto detectado.")
 
     def _on_toggle(self) -> None:
-        """Ctrl+Shift+H — alterna gravacao on/off."""
+        """Win+Shift+H — alterna gravacao on/off."""
         if not self._toggle_active:
             self._toggle_active = True
             print("[speedosper] Gravando (toggle ON)...")
@@ -63,19 +63,20 @@ class SpeedOsper:
         print(f"  Saida:        {self.config.output_mode}")
         print(f"  Sair:         Ctrl+Q")
 
-        # Push-to-talk: segura pra gravar, solta pra transcrever
-        keyboard.on_press_key(
-            "h",
-            lambda e: self._on_push_to_talk_press()
-            if keyboard.is_pressed("ctrl") and not keyboard.is_pressed("shift")
-            else None,
+        # Push-to-talk: Win+H — segura pra gravar, solta pra transcrever
+        # suppress=True bloqueia o Win+H nativo do Windows
+        keyboard.add_hotkey(
+            self.config.hotkey_push_to_talk,
+            self._on_push_to_talk_press,
+            suppress=True,
+            trigger_on_release=False,
         )
         keyboard.on_release_key(
             "h",
             lambda e: self._on_push_to_talk_release(),
         )
 
-        # Toggle: Ctrl+Shift+H
+        # Toggle: Win+Shift+H
         keyboard.add_hotkey(
             self.config.hotkey_toggle,
             self._on_toggle,

@@ -11,8 +11,8 @@ class Config:
     device: str = "cuda"
 
     # Hotkey
-    hotkey_push_to_talk: str = "ctrl+h"
-    hotkey_toggle: str = "ctrl+shift+h"
+    hotkey_push_to_talk: str = "windows+h"
+    hotkey_toggle: str = "windows+shift+h"
 
     # Saida
     # "cursor" = cola direto no cursor ativo (simula digitacao)
