@@ -3,6 +3,7 @@
 import atexit
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import keyboard
@@ -33,12 +34,15 @@ class SpeedOsper:
     def _on_push_to_talk_release(self) -> None:
         """F20 release (Win+H solto via AHK) — para e transcreve."""
         if self.recorder.is_recording:
+            t0 = time.perf_counter()
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
             if text:
-                print(f"\n>>> {text}\n")
                 self.output.send(text)
+                elapsed = time.perf_counter() - t0
+                print(f"\n>>> {text}")
+                print(f"    ({elapsed:.1f}s total)\n")
             else:
                 print("[speedosper] Nenhum texto detectado.")
 
@@ -50,12 +54,15 @@ class SpeedOsper:
             self.recorder.start()
         else:
             self._toggle_active = False
+            t0 = time.perf_counter()
             print("[speedosper] Processando...")
             audio = self.recorder.stop()
             text = self.transcriber.transcribe(audio)
             if text:
-                print(f"\n>>> {text}\n")
                 self.output.send(text)
+                elapsed = time.perf_counter() - t0
+                print(f"\n>>> {text}")
+                print(f"    ({elapsed:.1f}s total)\n")
             else:
                 print("[speedosper] Nenhum texto detectado.")
 
@@ -93,6 +100,7 @@ class SpeedOsper:
 
         print("[speedosper] Carregando modelo Whisper...")
         self.transcriber.load_model()
+        self.transcriber.warm_up()
 
         print("[speedosper] Pronto!")
         print("  Push-to-talk: Win+H (segura e fala)")

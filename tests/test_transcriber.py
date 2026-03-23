@@ -59,3 +59,34 @@ class TestTranscriber:
 
         assert result == "teste"
         mock_load.assert_called_once()
+
+    @patch("src.transcriber.whisper.load_model")
+    def test_warm_up_runs_dummy_transcription(self, mock_load, config):
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = {"text": ""}
+        mock_load.return_value = mock_model
+
+        t = Transcriber(config)
+        t.warm_up()
+
+        assert t.is_loaded
+        mock_model.transcribe.assert_called_once()
+        # Verifica que o audio dummy tem 1s de duracao
+        call_args = mock_model.transcribe.call_args
+        audio_arg = call_args[0][0]
+        assert len(audio_arg) == config.sample_rate
+
+    @patch("src.transcriber.whisper.load_model")
+    def test_transcribe_uses_greedy_decoding(self, mock_load, config, sample_audio):
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = {"text": "teste"}
+        mock_load.return_value = mock_model
+
+        t = Transcriber(config)
+        t.load_model()
+        t.transcribe(sample_audio)
+
+        call_kwargs = mock_model.transcribe.call_args[1]
+        assert call_kwargs["beam_size"] == 1
+        assert call_kwargs["condition_on_previous_text"] is False
+        assert call_kwargs["no_speech_threshold"] == 0.6
