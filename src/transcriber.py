@@ -6,6 +6,7 @@ import numpy as np
 import whisper
 
 from src.config import Config
+from src.postprocess import postprocess
 
 # Prompt que induz pontuacao natural no Whisper
 _PUNCTUATION_PROMPT = (
@@ -71,7 +72,7 @@ class Transcriber:
             no_speech_threshold=0.6,
         )
         elapsed = time.perf_counter() - t0
-        text = result["text"].strip()
+        text = postprocess(result["text"].strip())
 
         if text:
             duration = len(audio) / self.config.sample_rate

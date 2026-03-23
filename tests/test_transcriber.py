@@ -57,7 +57,7 @@ class TestTranscriber:
         # Nao chama load_model() explicitamente
         result = t.transcribe(sample_audio)
 
-        assert result == "teste"
+        assert result == "Teste"  # postprocess capitaliza primeira letra
         mock_load.assert_called_once()
 
     @patch("src.transcriber.whisper.load_model")
