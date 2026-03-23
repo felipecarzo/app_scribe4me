@@ -43,11 +43,16 @@ node_modules/
 .env.local
 .env.*.local
 
-# Python (legacy)
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
 
 # Models (too large for git)
 models/
