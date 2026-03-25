@@ -15,6 +15,7 @@ from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
+from src.model_prefetch import prefetch_models_async
 from src.player import AudioPlayer
 from src.tray import TrayIcon, AppState
 
@@ -101,6 +102,29 @@ class SpeedOsper:
         """Abre o arquivo de log no editor padrao."""
         if self._log_file and self._log_file.exists():
             os.startfile(str(self._log_file))
+
+    def _prefetch_models(self) -> None:
+        """Baixa modelos de traducao/TTS em background."""
+        bridge = self.transcriber._bridge
+        if bridge is None:
+            return
+
+        def _on_progress(step_name, current, total):
+            self._tray.notify(APP_NAME, f"Baixando {step_name} ({current}/{total})...")
+
+        def _on_complete(success):
+            if success:
+                logger.info("Prefetch de modelos concluido.")
+            else:
+                logger.warning("Prefetch de modelos incompleto — alguns modelos podem falhar.")
+
+        prefetch_models_async(
+            bridge,
+            language=self.config.language,
+            target_language=self.config.target_language,
+            on_progress=_on_progress,
+            on_complete=_on_complete,
+        )
 
     def _change_mode(self, mode: AppMode) -> None:
         """Troca o modo de operacao."""
@@ -360,7 +384,11 @@ class SpeedOsper:
         logger.info("  Sair:         Ctrl+Q")
 
         self._tray.set_state(AppState.IDLE)
-        self._tray.notify(APP_NAME, "Pronto! Ctrl+Shift+H para gravar.")
+        self._tray.notify(APP_NAME, "Pronto! Ctrl+Alt+H para gravar.")
+
+        # Prefetch de modelos em background (traducao, TTS)
+        if self.config.mode != AppMode.SCRIBE:
+            self._prefetch_models()
 
         # Aguarda quit
         self._quit_event.wait()
