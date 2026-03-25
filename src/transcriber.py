@@ -23,23 +23,36 @@ class Transcriber:
         """Carrega o Motor Ayvu (chamado uma vez no startup)."""
         if self._bridge is not None:
             return
-        logger.info("Carregando Motor Ayvu (lang=%s)...", self.config.language)
+        logger.info("Carregando Motor Ayvu (model=%s, lang=%s)...",
+                     self.config.model, self.config.language)
         try:
             dll_path = self.config.motor_dll_path or None
             self._bridge = MotorBridge(dll_path=dll_path)
+            # Configura modelo Whisper antes da primeira transcricao
+            model = self.config.model
+            if model in ("tiny", "base", "small", "medium", "large"):
+                ok = self._bridge.set_stt_model(model)
+                if ok:
+                    logger.info("Modelo STT configurado: %s", model)
+                else:
+                    logger.warning("Modelo STT ja inicializado — nao foi possivel trocar para '%s'.", model)
         except Exception as e:
             logger.error("Falha ao carregar Motor Ayvu: %s", e)
             raise
         logger.info("Motor Ayvu carregado — versao %s.", self._bridge.version())
 
     def reload_model(self, model_name: str) -> None:
-        """Recarrega o motor (model_name ignorado — motor usa modelo fixo)."""
+        """Recarrega o motor com novo modelo Whisper.
+
+        NOTA: OnceLock no Rust impede troca apos primeira transcricao.
+        Reinicia o bridge para forcar nova inicializacao com modelo diferente.
+        """
         logger.info("Reload solicitado (model=%s) — reiniciando bridge...", model_name)
         self.config.model = model_name
         self._bridge = None
         self.load_model()
         self.warm_up()
-        logger.info("Motor Ayvu recarregado.")
+        logger.info("Motor Ayvu recarregado com modelo '%s'.", model_name)
 
     def warm_up(self) -> None:
         """Faz uma transcricao dummy para aquecer o motor."""

@@ -160,6 +160,10 @@ class MotorBridge:
         dll.scribe_motor_version.restype = c_char_p
         dll.scribe_motor_version.argtypes = []
 
+        # scribe_set_stt_model(model_name) -> bool
+        dll.scribe_set_stt_model.restype = ctypes.c_bool
+        dll.scribe_set_stt_model.argtypes = [c_char_p]
+
         # scribe_transcribe(samples, num_samples, lang) -> *mut c_char
         dll.scribe_transcribe.restype = c_char_p
         dll.scribe_transcribe.argtypes = [POINTER(c_float), c_size_t, c_char_p]
@@ -204,6 +208,14 @@ class MotorBridge:
         if not result:
             return "(desconhecida)"
         return result.decode("utf-8")
+
+    def set_stt_model(self, model_name: str) -> bool:
+        """Configura o modelo Whisper (tiny/base/small/medium/large).
+
+        Deve ser chamado ANTES da primeira transcricao.
+        Retorna True se configurado, False se motor já inicializado.
+        """
+        return self._dll.scribe_set_stt_model(model_name.encode("utf-8"))
 
     def transcribe(self, audio: np.ndarray, lang: Optional[str] = None) -> str:
         """Transcreve audio float32 mono 16kHz para texto."""
