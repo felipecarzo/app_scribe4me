@@ -91,11 +91,11 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| INT-01 | Criar `src/motor_bridge.py` — wrapper ctypes para motor_ayvu.dll | ⏳ | FFI-03 | INT-02 |
-| INT-02 | Refatorar `transcriber.py` — chamar motor_bridge ao inves de faster-whisper | 🔒 | INT-01 | INT-03 |
-| INT-03 | Remover faster-whisper do requirements.txt e imports | 🔒 | INT-02 | INT-04 |
-| INT-04 | Config: path da DLL + warm-up via motor | 🔒 | INT-02 | INT-05 |
-| INT-05 | Testes de regressao — todos os test modules passam com novo backend | 🔒 | INT-03 | TRN-01 |
+| INT-01 | Criar `src/motor_bridge.py` — wrapper ctypes para motor_ayvu.dll | ✅ | FFI-03 | INT-02 |
+| INT-02 | Refatorar `transcriber.py` — chamar motor_bridge ao inves de faster-whisper | ✅ | INT-01 | INT-03 |
+| INT-03 | Remover faster-whisper do requirements.txt e imports | ✅ | INT-02 | INT-04 |
+| INT-04 | Config: path da DLL + warm-up via motor | ✅ | INT-02 | INT-05 |
+| INT-05 | Testes de regressao — todos os test modules passam com novo backend | ✅ | INT-03 | TRN-01 |
 
 **Criterio de aceite:** Push-to-talk funciona identico ao v1, usando Whisper do motor ayvu.
 
@@ -105,7 +105,7 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| TRN-01 | Config: `target_language` e `mode` enum (scribe/translate/voice) | 🔒 | INT-05 | TRN-02 |
+| TRN-01 | Config: `target_language` e `mode` enum (scribe/translate/voice) | ⏳ | INT-05 | TRN-02 |
 | TRN-02 | Orquestrador de modo em `main.py` — despacha pipeline por modo | 🔒 | TRN-01 | TRN-03 |
 | TRN-03 | Tray: seletor de modo + seletor de idioma alvo no menu | 🔒 | TRN-02 | TRN-04 |
 | TRN-04 | Output traduzido no cursor/clipboard | 🔒 | TRN-03 | TRN-05 |
@@ -138,10 +138,10 @@
 | **v1 Fase 2** — Polimento | Latencia, tray icon, pontuacao | 3 | ✅ |
 | **v1 Fase 3** — Migracao faster-whisper | CTranslate2, CUDA fallback, open source | pos-3 | ✅ |
 | **v2 Fase 0** — C-ABI motor ayvu | ffi.rs, DLL, testes Python↔Rust | 4 | ✅ |
-| **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ⏳ |
-| **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | 🔒 |
+| **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ✅ |
+| **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | ⏳ |
 | **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | 🔒 |
 
 ---
 
-*Ultima atualizacao: 2026-03-25 — Sprint 4 concluido (Fase 0 — C-ABI ✅). Proximo: Sprint 5 (Fase 1 — integracao motor ayvu no app).*
+*Ultima atualizacao: 2026-03-25 — Sprint 5 concluido (Fase 1 — integracao motor ✅). Proximo: Sprint 6 (Fase 2 — modo translate).*

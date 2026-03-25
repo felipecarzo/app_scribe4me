@@ -1,81 +1,83 @@
-"""Interface com Whisper para transcricao."""
+"""Interface com Whisper para transcricao (via Motor Ayvu — Rust ONNX backend)."""
 
 import time
+import logging
 
 import numpy as np
-import whisper
 
 from src.config import Config
+from src.motor_bridge import MotorBridge
 from src.postprocess import postprocess
 
-# Prompt que induz pontuacao natural no Whisper
-_PUNCTUATION_PROMPT = (
-    "Olá, tudo bem? Sim, estou trabalhando no projeto. "
-    "Vamos resolver isso agora, ok? Preciso que você faça o seguinte: "
-    "primeiro, abra o arquivo; depois, edite a configuração."
-)
+logger = logging.getLogger("speedosper")
 
 
 class Transcriber:
-    """Transcreve audio usando Whisper."""
+    """Transcreve audio usando Motor Ayvu (Whisper via ONNX Runtime)."""
 
     def __init__(self, config: Config):
         self.config = config
-        self._model: whisper.Whisper | None = None
+        self._bridge: MotorBridge | None = None
 
     def load_model(self) -> None:
-        """Carrega o modelo Whisper (chamado uma vez no startup)."""
-        if self._model is not None:
+        """Carrega o Motor Ayvu (chamado uma vez no startup)."""
+        if self._bridge is not None:
             return
-        print(f"[transcriber] Carregando modelo Whisper '{self.config.model}' em '{self.config.device}'...")
-        self._model = whisper.load_model(self.config.model, device=self.config.device)
-        print("[transcriber] Modelo carregado.")
+        logger.info("Carregando Motor Ayvu (lang=%s)...", self.config.language)
+        try:
+            dll_path = self.config.motor_dll_path or None
+            self._bridge = MotorBridge(dll_path=dll_path)
+        except Exception as e:
+            logger.error("Falha ao carregar Motor Ayvu: %s", e)
+            raise
+        logger.info("Motor Ayvu carregado — versao %s.", self._bridge.version())
+
+    def reload_model(self, model_name: str) -> None:
+        """Recarrega o motor (model_name ignorado — motor usa modelo fixo)."""
+        logger.info("Reload solicitado (model=%s) — reiniciando bridge...", model_name)
+        self.config.model = model_name
+        self._bridge = None
+        self.load_model()
+        self.warm_up()
+        logger.info("Motor Ayvu recarregado.")
 
     def warm_up(self) -> None:
-        """Faz uma transcricao dummy para aquecer CUDA JIT e kernels."""
-        if self._model is None:
+        """Faz uma transcricao dummy para aquecer o motor."""
+        if self._bridge is None:
             self.load_model()
-        print("[transcriber] Aquecendo modelo (warm-up)...")
+        logger.info("Aquecendo Motor Ayvu (warm-up)...")
         t0 = time.perf_counter()
         dummy = np.zeros(self.config.sample_rate, dtype=np.float32)
-        self._model.transcribe(
-            dummy,
-            language=self.config.language,
-            fp16=(self.config.device == "cuda"),
-        )
+        self._bridge.transcribe(dummy, lang=self.config.language)
         elapsed = time.perf_counter() - t0
-        print(f"[transcriber] Warm-up concluido ({elapsed:.1f}s). Proximas transcricoes serao mais rapidas.")
+        logger.info("Warm-up concluido (%.1fs).", elapsed)
 
     @property
     def is_loaded(self) -> bool:
-        return self._model is not None
+        return self._bridge is not None
 
     def transcribe(self, audio: np.ndarray) -> str:
         """Transcreve audio (float32, mono, 16kHz) para texto.
 
         Retorna string vazia se audio for muito curto.
         """
-        if self._model is None:
+        if self._bridge is None:
             self.load_model()
 
         if len(audio) < self.config.sample_rate * 0.3:
             return ""
 
         t0 = time.perf_counter()
-        result = self._model.transcribe(
-            audio,
-            language=self.config.language,
-            fp16=(self.config.device == "cuda"),
-            initial_prompt=_PUNCTUATION_PROMPT,
-            condition_on_previous_text=False,
-            beam_size=1,
-            no_speech_threshold=0.6,
-        )
+        text = self._bridge.transcribe(audio, lang=self.config.language)
         elapsed = time.perf_counter() - t0
-        text = postprocess(result["text"].strip())
+
+        text = postprocess(text.strip())
 
         if text:
             duration = len(audio) / self.config.sample_rate
-            print(f"[transcriber] {duration:.1f}s de audio -> {elapsed:.1f}s de processamento (ratio {elapsed/duration:.2f}x)")
+            logger.info(
+                "%.1fs de audio -> %.1fs de processamento (ratio %.2fx)",
+                duration, elapsed, elapsed / duration,
+            )
 
         return text
