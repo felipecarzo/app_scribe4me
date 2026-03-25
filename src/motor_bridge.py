@@ -104,20 +104,36 @@ class ProsodyResult:
 
 # Ordem de busca:
 # 1. Variavel de ambiente MOTOR_AYVU_DLL
-# 2. Path padrao do build release
+# 2. Junto ao executavel (PyInstaller bundle)
+# 3. Path padrao do build release (desenvolvimento)
 _DEFAULT_DLL_PATH = Path(r"D:\Documentos\Ti\projetos\app_ayvu\motor\target\release\motor.dll")
 
 
 def _find_dll() -> Path:
     import os
+    import sys
+
+    # 1. Env var
     env = os.environ.get("MOTOR_AYVU_DLL")
     if env:
         p = Path(env)
         if p.exists():
             return p
-        logger.warning("MOTOR_AYVU_DLL=%s nao encontrado, tentando path padrao.", env)
+        logger.warning("MOTOR_AYVU_DLL=%s nao encontrado.", env)
+
+    # 2. PyInstaller bundle (motor.dll ao lado do .exe)
+    if getattr(sys, "frozen", False):
+        bundle_path = Path(sys._MEIPASS) / "motor.dll"
+        if bundle_path.exists():
+            return bundle_path
+        exe_dir = Path(sys.executable).parent / "motor.dll"
+        if exe_dir.exists():
+            return exe_dir
+
+    # 3. Path padrao de desenvolvimento
     if _DEFAULT_DLL_PATH.exists():
         return _DEFAULT_DLL_PATH
+
     raise FileNotFoundError(
         f"motor.dll nao encontrada. Defina MOTOR_AYVU_DLL ou compile o motor ayvu. "
         f"Tentou: {_DEFAULT_DLL_PATH}"
