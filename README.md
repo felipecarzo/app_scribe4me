@@ -53,7 +53,7 @@ Baixe o instalador na [pagina de Releases](../../releases) e execute.
 
 ```bash
 # Clone o repositorio
-git clone https://github.com/SEU_USUARIO/app_scribe4me.git
+git clone https://github.com/felipecarzo/app_scribe4me.git
 cd app_scribe4me
 
 # Crie e ative o ambiente virtual
@@ -124,7 +124,7 @@ assets/            — icone e EULA
 pip install pyinstaller
 
 # Gere o executavel
-pyinstaller scribe4me.spec --distpath dist_scribe4me --workpath build_scribe4me
+pyinstaller scribe4me.spec --distpath dist --workpath build_scribe4me
 ```
 
 Para gerar o instalador Windows, instale o [Inno Setup](https://jrsoftware.org/isdl.php) e compile `scribe4me_installer.iss`.
