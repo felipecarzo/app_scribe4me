@@ -48,7 +48,7 @@ Name: "desktopicon"; Description: "Criar atalho na &Area de Trabalho"; GroupDesc
 Name: "startupicon"; Description: "Iniciar com o &Windows"; GroupDescription: "Opcoes:"; Flags: unchecked
 
 [Files]
-Source: "dist_scribe4me\Scribe4me\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\Scribe4me\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"
