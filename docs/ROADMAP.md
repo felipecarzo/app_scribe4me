@@ -119,10 +119,10 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| VOZ-01 | `src/player.py` — playback de PCM f32 via sounddevice | ⏳ | TRN-05 | VOZ-02 |
-| VOZ-02 | Pipeline voice completo: voz -> texto -> traducao -> TTS -> play | 🔒 | VOZ-01 | VOZ-03 |
-| VOZ-03 | Tray: estado PLAYING + config auto-play | 🔒 | VOZ-02 | BLD-01 |
-| BLD-01 | PyInstaller spec com motor_ayvu.dll bundled | 🔒 | VOZ-03 | BLD-02 |
+| VOZ-01 | `src/player.py` — playback de PCM f32 via sounddevice | ✅ | TRN-05 | VOZ-02 |
+| VOZ-02 | Pipeline voice completo: voz -> texto -> traducao -> TTS -> play | ✅ | VOZ-01 | VOZ-03 |
+| VOZ-03 | Tray: estado PLAYING + config auto-play | ✅ | VOZ-02 | BLD-01 |
+| BLD-01 | PyInstaller spec com motor_ayvu.dll bundled | ⏳ | VOZ-03 | BLD-02 |
 | BLD-02 | First-run: download de modelos ONNX com progress bar | 🔒 | BLD-01 | BLD-03 |
 | BLD-03 | Installer atualizado + testes em maquina limpa | 🔒 | BLD-02 | — |
 
@@ -144,4 +144,4 @@
 
 ---
 
-*Ultima atualizacao: 2026-03-25 — Sprint 6 concluido (Fase 2 — modo translate ✅). Proximo: Sprint 7 (Fase 3 — modo voice + build).*
+*Ultima atualizacao: 2026-03-25 — Sprint 7 em progresso (VOZ-01/02/03 ✅). Proximo: BLD-01 (PyInstaller + DLL bundled).*

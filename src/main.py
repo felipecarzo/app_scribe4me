@@ -15,6 +15,7 @@ from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
+from src.player import AudioPlayer
 from src.tray import TrayIcon, AppState
 
 logger = logging.getLogger("speedosper")
@@ -50,6 +51,7 @@ class SpeedOsper:
         self.transcriber = Transcriber(self.config)
         self.recorder = Recorder(self.config)
         self.output = OutputHandler(self.config)
+        self.player = AudioPlayer()
         self._toggle_active = False
         self._quit_event = threading.Event()
         self._listener: kb.Listener | None = None
@@ -171,8 +173,10 @@ class SpeedOsper:
             text = self._pipeline_scribe(audio)
         elif mode == AppMode.TRANSLATE:
             text = self._pipeline_translate(audio)
+        elif mode == AppMode.VOICE:
+            text = self._pipeline_voice(audio)
         else:
-            text = self._pipeline_scribe(audio)  # voice: futuro Sprint 7
+            text = self._pipeline_scribe(audio)
 
         if text:
             self.output.send(text)
@@ -194,7 +198,6 @@ class SpeedOsper:
         if not text:
             return ""
         try:
-            from src.motor_bridge import MotorBridge
             bridge = self.transcriber._bridge
             if bridge is None:
                 logger.error("Motor bridge nao inicializado.")
@@ -206,6 +209,30 @@ class SpeedOsper:
         except Exception as e:
             logger.error("Falha na traducao: %s — retornando texto original.", e)
             return text
+
+    def _pipeline_voice(self, audio) -> str:
+        """Modo voice: fala -> texto -> traducao -> TTS -> playback."""
+        try:
+            bridge = self.transcriber._bridge
+            if bridge is None:
+                logger.error("Motor bridge nao inicializado.")
+                return ""
+            result = bridge.voice_translate(
+                audio, self.config.target_language, src_lang=self.config.language,
+            )
+            logger.info(
+                "Voice: '%s' -> '%s' (cache=%s, quality=%.2f)",
+                result.source_text, result.translated_text,
+                result.cache_hit, result.quality_score,
+            )
+            # Reproduz audio traduzido
+            if len(result.samples) > 0:
+                self._tray.set_state(AppState.PLAYING)
+                self.player.play(result.samples, result.sample_rate)
+            return result.translated_text
+        except Exception as e:
+            logger.error("Falha no voice translate: %s", e)
+            return ""
 
     # --- Ready-to-copy timer ---
 

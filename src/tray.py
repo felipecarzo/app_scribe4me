@@ -20,6 +20,7 @@ class AppState(Enum):
     RECORDING = "recording"          # vermelho — gravando
     TRANSCRIBING = "transcribing"    # vermelho piscando — processando
     READY_TO_COPY = "ready_to_copy"  # azul — texto disponivel
+    PLAYING = "playing"              # roxo — reproduzindo audio traduzido
 
 
 # Cores por estado
@@ -29,6 +30,7 @@ _COLORS = {
     AppState.RECORDING: "#F44336",      # vermelho
     AppState.TRANSCRIBING: "#F44336",   # vermelho (pisca)
     AppState.READY_TO_COPY: "#2196F3",  # azul
+    AppState.PLAYING: "#9C27B0",        # roxo
 }
 
 _TOOLTIPS = {
@@ -37,6 +39,7 @@ _TOOLTIPS = {
     AppState.RECORDING: f"{APP_NAME} — Gravando...",
     AppState.TRANSCRIBING: f"{APP_NAME} — Transcrevendo...",
     AppState.READY_TO_COPY: f"{APP_NAME} — Texto pronto (Ctrl+V)",
+    AppState.PLAYING: f"{APP_NAME} — Reproduzindo...",
 }
 
 
@@ -275,6 +278,7 @@ class TrayIcon:
             AppState.RECORDING: (APP_NAME, "Gravando..."),
             AppState.TRANSCRIBING: (APP_NAME, "Processando transcricao..."),
             AppState.READY_TO_COPY: (APP_NAME, "Texto pronto! Ctrl+V para colar."),
+            AppState.PLAYING: (APP_NAME, "Reproduzindo audio traduzido..."),
         }
         if state in messages:
             title, msg = messages[state]
