@@ -105,11 +105,11 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| TRN-01 | Config: `target_language` e `mode` enum (scribe/translate/voice) | ⏳ | INT-05 | TRN-02 |
-| TRN-02 | Orquestrador de modo em `main.py` — despacha pipeline por modo | 🔒 | TRN-01 | TRN-03 |
-| TRN-03 | Tray: seletor de modo + seletor de idioma alvo no menu | 🔒 | TRN-02 | TRN-04 |
-| TRN-04 | Output traduzido no cursor/clipboard | 🔒 | TRN-03 | TRN-05 |
-| TRN-05 | Testes end-to-end modo translate | 🔒 | TRN-04 | VOZ-01 |
+| TRN-01 | Config: `target_language` e `mode` enum (scribe/translate/voice) | ✅ | INT-05 | TRN-02 |
+| TRN-02 | Orquestrador de modo em `main.py` — despacha pipeline por modo | ✅ | TRN-01 | TRN-03 |
+| TRN-03 | Tray: seletor de modo + seletor de idioma alvo no menu | ✅ | TRN-02 | TRN-04 |
+| TRN-04 | Output traduzido no cursor/clipboard | ✅ | TRN-03 | TRN-05 |
+| TRN-05 | Testes end-to-end modo translate | ✅ | TRN-04 | VOZ-01 |
 
 **Criterio de aceite:** Fala em PT, texto traduzido em EN aparece no cursor.
 
@@ -119,7 +119,7 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| VOZ-01 | `src/player.py` — playback de PCM f32 via sounddevice | 🔒 | TRN-05 | VOZ-02 |
+| VOZ-01 | `src/player.py` — playback de PCM f32 via sounddevice | ⏳ | TRN-05 | VOZ-02 |
 | VOZ-02 | Pipeline voice completo: voz -> texto -> traducao -> TTS -> play | 🔒 | VOZ-01 | VOZ-03 |
 | VOZ-03 | Tray: estado PLAYING + config auto-play | 🔒 | VOZ-02 | BLD-01 |
 | BLD-01 | PyInstaller spec com motor_ayvu.dll bundled | 🔒 | VOZ-03 | BLD-02 |
@@ -139,9 +139,9 @@
 | **v1 Fase 3** — Migracao faster-whisper | CTranslate2, CUDA fallback, open source | pos-3 | ✅ |
 | **v2 Fase 0** — C-ABI motor ayvu | ffi.rs, DLL, testes Python↔Rust | 4 | ✅ |
 | **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ✅ |
-| **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | ⏳ |
-| **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | 🔒 |
+| **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | ✅ |
+| **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | ⏳ |
 
 ---
 
-*Ultima atualizacao: 2026-03-25 — Sprint 5 concluido (Fase 1 — integracao motor ✅). Proximo: Sprint 6 (Fase 2 — modo translate).*
+*Ultima atualizacao: 2026-03-25 — Sprint 6 concluido (Fase 2 — modo translate ✅). Proximo: Sprint 7 (Fase 3 — modo voice + build).*
