@@ -1,0 +1,17 @@
+# Scribe4me — Speech-to-text local com Whisper
+# Python 3.12 + CUDA
+
+# Core — Whisper STT (CTranslate2, ~4x mais rapido que openai-whisper)
+faster-whisper>=1.0.0
+
+# Audio — gravacao do microfone
+sounddevice>=0.5.1
+numpy>=1.26.0
+
+# Clipboard/input — enviar texto para cursor ativo
+pyperclip>=1.9.0
+pynput>=1.7.7
+
+# UI — tray icon e notificacoes
+pystray>=0.19.5
+Pillow>=10.0.0
