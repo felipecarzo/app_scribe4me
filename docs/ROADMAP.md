@@ -66,14 +66,82 @@
 
 ---
 
-## Fases do Produto (visao macro)
+---
 
-| Fase | Escopo | Sprints |
-|---|---|---|
-| **Fase 1** — MVP funcional | Ctrl+H -> grava -> Whisper large -> texto no cursor/clipboard | 0-2 |
-| **Fase 2** — Polimento | Latencia otimizada, feedback visual, pontuacao refinada | 3 |
-| **Fase 3** — Extras | Multi-idioma, comandos por voz, historico | pos-MVP |
+# SCRIBE4ME v2 — Motor Ayvu
+
+> Plano completo em `docs/SCRIBE4ME_V2_PLAN.md`
 
 ---
 
-*Ultima atualizacao: 2026-03-23 — Sprint 0 ✅, Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅. Fase 1+2 completas. Proximo: Fase 3 (extras pos-MVP).*
+## Sprint 4 — Fase 0: C-ABI do Motor Ayvu
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| FFI-01 | Criar `ffi.rs` no motor ayvu — funcoes `extern "C"` wrapping `api.rs` | ✅ | — | FFI-02 |
+| FFI-02 | Cargo config cdylib (ja feito) + build release gerando `motor_ayvu.dll` | ✅ | FFI-01 | FFI-03 |
+| FFI-03 | Testes de integracao Python ↔ Rust via ctypes | ✅ | FFI-02 | INT-01 |
+
+**Local:** `D:\Documentos\Ti\projetos\app_ayvu\motor\`
+**Criterio de aceite:** Python carrega a DLL e chama `scribe_motor_version()` com sucesso.
+
+---
+
+## Sprint 5 — Fase 1: Integracao basica (modo Scribe via motor)
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| INT-01 | Criar `src/motor_bridge.py` — wrapper ctypes para motor_ayvu.dll | ⏳ | FFI-03 | INT-02 |
+| INT-02 | Refatorar `transcriber.py` — chamar motor_bridge ao inves de faster-whisper | 🔒 | INT-01 | INT-03 |
+| INT-03 | Remover faster-whisper do requirements.txt e imports | 🔒 | INT-02 | INT-04 |
+| INT-04 | Config: path da DLL + warm-up via motor | 🔒 | INT-02 | INT-05 |
+| INT-05 | Testes de regressao — todos os test modules passam com novo backend | 🔒 | INT-03 | TRN-01 |
+
+**Criterio de aceite:** Push-to-talk funciona identico ao v1, usando Whisper do motor ayvu.
+
+---
+
+## Sprint 6 — Fase 2: Modo Translate
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| TRN-01 | Config: `target_language` e `mode` enum (scribe/translate/voice) | 🔒 | INT-05 | TRN-02 |
+| TRN-02 | Orquestrador de modo em `main.py` — despacha pipeline por modo | 🔒 | TRN-01 | TRN-03 |
+| TRN-03 | Tray: seletor de modo + seletor de idioma alvo no menu | 🔒 | TRN-02 | TRN-04 |
+| TRN-04 | Output traduzido no cursor/clipboard | 🔒 | TRN-03 | TRN-05 |
+| TRN-05 | Testes end-to-end modo translate | 🔒 | TRN-04 | VOZ-01 |
+
+**Criterio de aceite:** Fala em PT, texto traduzido em EN aparece no cursor.
+
+---
+
+## Sprint 7 — Fase 3: Modo Voice + Polimento final
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| VOZ-01 | `src/player.py` — playback de PCM f32 via sounddevice | 🔒 | TRN-05 | VOZ-02 |
+| VOZ-02 | Pipeline voice completo: voz -> texto -> traducao -> TTS -> play | 🔒 | VOZ-01 | VOZ-03 |
+| VOZ-03 | Tray: estado PLAYING + config auto-play | 🔒 | VOZ-02 | BLD-01 |
+| BLD-01 | PyInstaller spec com motor_ayvu.dll bundled | 🔒 | VOZ-03 | BLD-02 |
+| BLD-02 | First-run: download de modelos ONNX com progress bar | 🔒 | BLD-01 | BLD-03 |
+| BLD-03 | Installer atualizado + testes em maquina limpa | 🔒 | BLD-02 | — |
+
+**Criterio de aceite:** Fala em PT, ouve traducao em EN. Installer funcional.
+
+---
+
+## Fases do Produto (visao macro)
+
+| Fase | Escopo | Sprints | Estado |
+|---|---|---|---|
+| **v1 Fase 1** — MVP funcional | Ctrl+Alt+H -> grava -> Whisper -> texto | 0-2 | ✅ |
+| **v1 Fase 2** — Polimento | Latencia, tray icon, pontuacao | 3 | ✅ |
+| **v1 Fase 3** — Migracao faster-whisper | CTranslate2, CUDA fallback, open source | pos-3 | ✅ |
+| **v2 Fase 0** — C-ABI motor ayvu | ffi.rs, DLL, testes Python↔Rust | 4 | ✅ |
+| **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ⏳ |
+| **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | 🔒 |
+| **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | 🔒 |
+
+---
+
+*Ultima atualizacao: 2026-03-25 — Sprint 4 concluido (Fase 0 — C-ABI ✅). Proximo: Sprint 5 (Fase 1 — integracao motor ayvu no app).*
