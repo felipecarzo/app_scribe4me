@@ -5,12 +5,14 @@ from src.config import Config, AppMode, SUPPORTED_LANGUAGES
 
 def test_config_defaults():
     cfg = Config()
-    assert cfg.model == "large"
+    assert cfg.model == "large-v3"
     assert cfg.language == "pt"
     assert cfg.device == "cuda"
     assert cfg.output_mode == "cursor"
     assert cfg.sample_rate == 16000
     assert cfg.channels == 1
+    assert cfg.beam_size == 5
+    assert cfg.best_of == 3
     assert cfg.hotkey_push_to_talk == "<ctrl>+<alt>+h"
     assert cfg.hotkey_toggle == "<ctrl>+<alt>+t"
     assert cfg.mode == AppMode.SCRIBE

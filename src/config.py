@@ -33,7 +33,7 @@ SUPPORTED_LANGUAGES = {
 @dataclass
 class Config:
     # Motor Ayvu (Rust ONNX backend)
-    model: str = "large"  # mantido para compatibilidade (motor usa modelo fixo)
+    model: str = "large-v3"  # faster-whisper STT (large-v3 = melhor qualidade pt-BR)
     language: str = "pt"
     device: str = "cuda"  # mantido para compatibilidade
     motor_dll_path: str = ""  # vazio = usa MOTOR_AYVU_DLL ou path padrao
@@ -41,6 +41,10 @@ class Config:
     # Modo de operacao
     mode: AppMode = AppMode.SCRIBE
     target_language: str = "en"  # idioma alvo para traducao (modo translate/voice)
+
+    # Qualidade da transcricao
+    beam_size: int = 5       # 1=rapido/greedy, 5=qualidade padrao, 8-10=maximo
+    best_of: int = 3         # N candidatos (so atua com beam_size=1; com beam>1 e ignorado)
 
     # Hotkeys (pynput — Ctrl+Alt+H push-to-talk, Ctrl+Alt+T toggle, Ctrl+Q sair)
     hotkey_push_to_talk: str = "<ctrl>+<alt>+h"

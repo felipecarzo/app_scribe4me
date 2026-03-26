@@ -68,8 +68,8 @@ class TrayIcon:
         on_model_change: Callable[[str], None] | None = None,
         on_mode_change: Callable[[AppMode], None] | None = None,
         on_target_lang_change: Callable[[str], None] | None = None,
-        current_model: str = "large",
-        recommended_model: str = "large",
+        current_model: str = "large-v3",
+        recommended_model: str = "large-v3",
         current_mode: AppMode = AppMode.SCRIBE,
         current_target_lang: str = "en",
     ):

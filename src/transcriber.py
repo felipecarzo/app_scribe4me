@@ -104,7 +104,11 @@ class Transcriber:
         logger.info("Aquecendo modelo (warm-up)...")
         t0 = time.perf_counter()
         dummy = np.zeros(self.config.sample_rate, dtype=np.float32)
-        segments, _ = self._model.transcribe(dummy, language=self.config.language)
+        segments, _ = self._model.transcribe(
+            dummy,
+            language=self.config.language,
+            beam_size=self.config.beam_size,
+        )
         for _ in segments:
             pass
         elapsed = time.perf_counter() - t0
@@ -131,7 +135,8 @@ class Transcriber:
             language=self.config.language,
             initial_prompt=_PUNCTUATION_PROMPT,
             condition_on_previous_text=False,
-            beam_size=1,
+            beam_size=self.config.beam_size,
+            best_of=self.config.best_of,
             no_speech_threshold=0.6,
             vad_filter=True,
         )

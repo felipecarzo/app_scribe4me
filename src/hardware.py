@@ -9,11 +9,13 @@ logger = logging.getLogger("scribe4me.hardware")
 
 # Modelos Whisper: nome, tamanho do download, VRAM minima recomendada (MB), RAM minima (MB)
 WHISPER_MODELS = {
-    "tiny":   {"size": "~39 MB",   "vram_mb": 0,    "ram_mb": 2048,  "desc": "Ultra rapido, qualidade basica"},
-    "base":   {"size": "~74 MB",   "vram_mb": 0,    "ram_mb": 2048,  "desc": "Rapido, qualidade razoavel"},
-    "small":  {"size": "~244 MB",  "vram_mb": 2048,  "ram_mb": 4096,  "desc": "Equilibrado velocidade/qualidade"},
-    "medium": {"size": "~769 MB",  "vram_mb": 4096,  "ram_mb": 8192,  "desc": "Boa qualidade, mais lento"},
-    "large":  {"size": "~1.5 GB",  "vram_mb": 6144,  "ram_mb": 16384, "desc": "Melhor qualidade, requer GPU forte"},
+    "tiny":     {"size": "~39 MB",   "vram_mb": 0,    "ram_mb": 2048,  "desc": "Ultra rapido, qualidade basica"},
+    "base":     {"size": "~74 MB",   "vram_mb": 0,    "ram_mb": 2048,  "desc": "Rapido, qualidade razoavel"},
+    "small":    {"size": "~244 MB",  "vram_mb": 2048,  "ram_mb": 4096,  "desc": "Equilibrado velocidade/qualidade"},
+    "medium":   {"size": "~769 MB",  "vram_mb": 4096,  "ram_mb": 8192,  "desc": "Boa qualidade, mais lento"},
+    "large-v2": {"size": "~1.5 GB",  "vram_mb": 6144,  "ram_mb": 16384, "desc": "Excelente qualidade, estavel para pt-BR"},
+    "large-v3": {"size": "~1.5 GB",  "vram_mb": 6144,  "ram_mb": 16384, "desc": "Melhor qualidade geral, requer GPU forte"},
+    "large":    {"size": "~1.5 GB",  "vram_mb": 6144,  "ram_mb": 16384, "desc": "Alias para large-v3"},
 }
 
 
@@ -97,7 +99,7 @@ def detect_hardware() -> HardwareInfo:
 def recommend_model(hw: HardwareInfo) -> str:
     """Recomenda o melhor modelo Whisper para o hardware detectado."""
     if hw.cuda_available and hw.gpu_vram_mb >= 6144:
-        return "large"
+        return "large-v3"
     if hw.cuda_available and hw.gpu_vram_mb >= 4096:
         return "medium"
     if hw.cuda_available and hw.gpu_vram_mb >= 2048:
