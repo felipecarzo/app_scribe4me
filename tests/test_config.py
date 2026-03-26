@@ -11,7 +11,7 @@ def test_config_defaults():
     assert cfg.output_mode == "cursor"
     assert cfg.sample_rate == 16000
     assert cfg.channels == 1
-    assert cfg.beam_size == 5
+    assert cfg.beam_size == 1
     assert cfg.best_of == 3
     assert cfg.hotkey_push_to_talk == "<ctrl>+<alt>+h"
     assert cfg.hotkey_toggle == "<ctrl>+<alt>+t"

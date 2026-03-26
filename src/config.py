@@ -43,7 +43,7 @@ class Config:
     target_language: str = "en"  # idioma alvo para traducao (modo translate/voice)
 
     # Qualidade da transcricao
-    beam_size: int = 5       # 1=rapido/greedy, 5=qualidade padrao, 8-10=maximo
+    beam_size: int = 1       # 1=rapido/greedy, 5=qualidade padrao, 8-10=maximo
     best_of: int = 3         # N candidatos (so atua com beam_size=1; com beam>1 e ignorado)
 
     # Hotkeys (pynput — Ctrl+Alt+H push-to-talk, Ctrl+Alt+T toggle, Ctrl+Q sair)

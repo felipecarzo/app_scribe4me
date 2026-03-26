@@ -16,11 +16,13 @@ from src.postprocess import postprocess
 
 logger = logging.getLogger("speedosper")
 
-# Prompt que induz pontuacao natural no Whisper
+# Prompt que induz pontuacao natural e vocabulario tecnico no Whisper
 _PUNCTUATION_PROMPT = (
-    "Olá, tudo bem? Sim, estou trabalhando no projeto. "
-    "Vamos resolver isso agora, ok? Preciso que você faça o seguinte: "
-    "primeiro, abra o arquivo; depois, edite a configuração."
+    "Fiz o deploy no staging e rodei o pipeline de CI/CD. "
+    "O code review apontou que o endpoint precisa de rate limiting e throttling. "
+    "Vou implementar um middleware com token bucket antes do deadline. "
+    "O pull request com dark mode já foi aprovado, só falta o merge. "
+    "Depois faço o refactoring do backend e atualizo o changelog."
 )
 
 
