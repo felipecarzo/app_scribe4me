@@ -9,7 +9,7 @@
 
 | Branch | Tipo | Ultimo commit | Estado |
 |---|---|---|---|
-| `master` | desenvolvimento ativo | `fa999c1` | Fase 1+2 completas — MVP funcional + polimento |
+| `main` | desenvolvimento ativo | `1ccc7ec` | v2 completa — Sprints 0-7 ✅ |
 
 ---
 
