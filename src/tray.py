@@ -68,10 +68,12 @@ class TrayIcon:
         on_model_change: Callable[[str], None] | None = None,
         on_mode_change: Callable[[AppMode], None] | None = None,
         on_target_lang_change: Callable[[str], None] | None = None,
+        on_code_mode_toggle: Callable | None = None,
         current_model: str = "large-v3",
         recommended_model: str = "large-v3",
         current_mode: AppMode = AppMode.SCRIBE,
         current_target_lang: str = "en",
+        code_mode: bool = False,
     ):
         self._state = AppState.IDLE
         self._on_quit = on_quit
@@ -80,10 +82,12 @@ class TrayIcon:
         self._on_model_change = on_model_change
         self._on_mode_change = on_mode_change
         self._on_target_lang_change = on_target_lang_change
+        self._on_code_mode_toggle = on_code_mode_toggle
         self._current_model = current_model
         self._recommended_model = recommended_model
         self._current_mode = current_mode
         self._current_target_lang = current_target_lang
+        self._code_mode = code_mode
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
         self._blink_timer: threading.Timer | None = None
@@ -135,13 +139,21 @@ class TrayIcon:
                 )
             )
 
+        code_label = "Code Mode: ON" if self._code_mode else "Code Mode: OFF"
+
         return pystray.Menu(
             pystray.MenuItem(APP_NAME, None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Ctrl+Alt+H  —  Gravar (segura e fala)", None, enabled=False),
             pystray.MenuItem("Ctrl+Alt+T  —  Toggle (iniciar/parar)", None, enabled=False),
+            pystray.MenuItem("Ctrl+Alt+C  —  Code Mode", None, enabled=False),
             pystray.MenuItem("Ctrl+Q            —  Sair", None, enabled=False),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                code_label,
+                self._code_mode_clicked,
+                checked=lambda item: self._code_mode,
+            ),
             pystray.MenuItem(
                 f"Modo: {self._current_mode.value.capitalize()}",
                 pystray.Menu(*mode_items),
@@ -218,8 +230,14 @@ class TrayIcon:
         if self._icon is None:
             return
 
-        self._icon.icon = _create_icon_image(_COLORS[state])
-        self._icon.title = _TOOLTIPS[state]
+        # Cor ciano quando IDLE + code_mode ativo
+        if state == AppState.IDLE and self._code_mode:
+            color = "#00BCD4"
+            self._icon.icon = _create_icon_image(color)
+            self._icon.title = _TOOLTIPS[state] + " [Code]"
+        else:
+            self._icon.icon = _create_icon_image(_COLORS[state])
+            self._icon.title = _TOOLTIPS[state]
 
         # Inicia piscar se carregando ou transcrevendo
         if state in (AppState.LOADING, AppState.TRANSCRIBING):
@@ -297,3 +315,18 @@ class TrayIcon:
     def _open_log_clicked(self, icon, item) -> None:
         if self._on_open_log:
             self._on_open_log()
+
+    def _code_mode_clicked(self, icon, item) -> None:
+        if self._on_code_mode_toggle:
+            self._on_code_mode_toggle()
+
+    def set_code_mode(self, enabled: bool) -> None:
+        """Atualiza estado do code mode no tray (chamado pelo main)."""
+        self._code_mode = enabled
+        self._update_menu()
+        # Atualiza cor do icone se idle
+        if self._state == AppState.IDLE and self._icon is not None:
+            color = "#00BCD4" if enabled else _COLORS[AppState.IDLE]
+            self._icon.icon = _create_icon_image(color)
+            suffix = " [Code]" if enabled else ""
+            self._icon.title = _TOOLTIPS[AppState.IDLE] + suffix

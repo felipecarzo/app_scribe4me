@@ -72,10 +72,12 @@ class SpeedOsper:
             on_model_change=self._change_model,
             on_mode_change=self._change_mode,
             on_target_lang_change=self._change_target_lang,
+            on_code_mode_toggle=self._toggle_code_mode,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
             current_mode=self.config.mode,
             current_target_lang=self.config.target_language,
+            code_mode=self.config.code_mode,
         )
 
         # Tracking de teclas modificadoras para detectar combinacoes
@@ -147,6 +149,7 @@ class SpeedOsper:
         self.config.code_mode = not self.config.code_mode
         state = "ON" if self.config.code_mode else "OFF"
         logger.info("Code Mode: %s", state)
+        self._tray.set_code_mode(self.config.code_mode)
         self._tray.notify(APP_NAME, f"Code Mode: {state}")
 
     def _change_model(self, model_name: str) -> None:
