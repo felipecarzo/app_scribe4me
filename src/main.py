@@ -18,6 +18,7 @@ from src.hardware import detect_hardware, recommend_model
 from src.model_prefetch import prefetch_models_async
 from src.player import AudioPlayer
 from src.tray import TrayIcon, AppState
+from src.voice_commands import VoiceCommandEngine
 
 logger = logging.getLogger("speedosper")
 
@@ -53,6 +54,7 @@ class SpeedOsper:
         self.recorder = Recorder(self.config)
         self.output = OutputHandler(self.config)
         self.player = AudioPlayer()
+        self._voice_engine = VoiceCommandEngine()
         self._toggle_active = False
         self._quit_event = threading.Event()
         self._listener: kb.Listener | None = None
@@ -140,6 +142,13 @@ class SpeedOsper:
         logger.info("Idioma alvo alterado para: %s (%s)", lang_name, lang_code)
         self._tray.notify(APP_NAME, f"Idioma alvo: {lang_name}")
 
+    def _toggle_code_mode(self) -> None:
+        """Liga/desliga code mode."""
+        self.config.code_mode = not self.config.code_mode
+        state = "ON" if self.config.code_mode else "OFF"
+        logger.info("Code Mode: %s", state)
+        self._tray.notify(APP_NAME, f"Code Mode: {state}")
+
     def _change_model(self, model_name: str) -> None:
         """Troca o modelo Whisper em background."""
         def _reload():
@@ -213,8 +222,16 @@ class SpeedOsper:
             self._tray.set_state(AppState.IDLE)
 
     def _pipeline_scribe(self, audio) -> str:
-        """Modo scribe: fala -> texto."""
-        return self.transcriber.transcribe(audio)
+        """Modo scribe: fala -> texto. Se code_mode, processa comandos."""
+        text = self.transcriber.transcribe(audio)
+        if not text:
+            return ""
+        if self.config.code_mode:
+            results = self._voice_engine.process(text)
+            self.output.send_command_results(results)
+            logger.info("[code_mode] %s -> %d comando(s)", text, len(results))
+            return ""  # ja enviou via command_results
+        return text
 
     def _pipeline_translate(self, audio) -> str:
         """Modo translate: fala -> texto -> traducao."""
@@ -286,6 +303,7 @@ class SpeedOsper:
     _VK_H = 72
     _VK_T = 84
     _VK_Q = 81
+    _VK_C = 67
 
     @staticmethod
     def _get_vk(key) -> int | None:
@@ -311,6 +329,11 @@ class SpeedOsper:
 
         # Bloqueia hotkeys durante loading
         if self._tray._state == AppState.LOADING:
+            return
+
+        # Ctrl+Alt+C -> toggle code mode
+        if vk == self._VK_C and self._mod_ctrl() and self._mod_alt():
+            self._toggle_code_mode()
             return
 
         # Ctrl+Alt+T -> toggle
@@ -380,6 +403,7 @@ class SpeedOsper:
         logger.info("  Idioma alvo:  %s", self.config.target_language)
         logger.info("  Push-to-talk: Ctrl+Alt+H (segura e fala)")
         logger.info("  Toggle:       Ctrl+Alt+T (aperta pra iniciar/parar)")
+        logger.info("  Code Mode:    Ctrl+Alt+C (liga/desliga)")
         logger.info("  Saida:        %s", self.config.output_mode)
         logger.info("  Sair:         Ctrl+Q")
 

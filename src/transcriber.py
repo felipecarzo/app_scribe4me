@@ -16,13 +16,19 @@ from src.postprocess import postprocess
 
 logger = logging.getLogger("speedosper")
 
-# Prompt que induz pontuacao natural e vocabulario tecnico no Whisper
+# Prompt que induz pontuacao natural e vocabulario tecnico no Whisper.
+# Limite: ~224 tokens. Texto coerente com termos tech usados naturalmente.
 _PUNCTUATION_PROMPT = (
-    "Fiz o deploy no staging e rodei o pipeline de CI/CD. "
-    "O code review apontou que o endpoint precisa de rate limiting e throttling. "
-    "Vou implementar um middleware com token bucket antes do deadline. "
-    "O pull request com dark mode já foi aprovado, só falta o merge. "
-    "Depois faço o refactoring do backend e atualizo o changelog."
+    "Fiz o deploy no staging e rodei o pipeline de CI/CD pelo GitHub Actions. "
+    "O code review apontou que o endpoint da API precisa de rate limiting e throttling "
+    "com token bucket no middleware. Vou commitar o fix na branch develop e abrir um "
+    "pull request antes do merge na main. "
+    "No frontend, o componente React com async/await no callback estava dando exception "
+    "no try/catch. Rodei o debug com breakpoint e vi no stack trace que o import do "
+    "módulo SQL do database ORM tinha um bug no query builder. "
+    "O Kubernetes cluster no Docker precisa de um load balancer. Instalei via npm e pip "
+    "no localhost. O framework do backend usa class, function, method com parâmetro "
+    "e return tipados. Atualizei o changelog e o repository no Git."
 )
 
 

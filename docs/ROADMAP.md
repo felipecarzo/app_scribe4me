@@ -130,6 +130,36 @@
 
 ---
 
+## Sprint 8 — Voice Coding: Prompt Tecnico
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| VOC-01 | Expandir initial_prompt com vocabulario de programacao | ⏳ | — | VOC-02 |
+
+---
+
+## Sprint 9 — Voice Coding: Engine de Comandos
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| VOC-02 | Criar modulo voice_commands.py com engine de comandos | ⏳ | VOC-01 | VOC-03, VOC-04 |
+| VOC-03 | Implementar comandos estruturais e code shortcuts | ⏳ | VOC-02 | VOC-05 |
+| VOC-04 | Extender OutputHandler para keypresses (navegacao/controle) | ⏳ | VOC-02 | VOC-05 |
+| VOC-05 | Integrar voice_commands no pipeline do main.py | ⏳ | VOC-03, VOC-04 | VOC-06 |
+
+---
+
+## Sprint 10 — Voice Coding: UI e Polimento
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| VOC-06 | Toggle de Code Mode no tray menu | ⏳ | VOC-05 | VOC-07 |
+| VOC-07 | Hotkey Ctrl+Alt+C para toggle code mode | ⏳ | VOC-06 | VOC-08 |
+| VOC-08 | Feedback visual (cor ciano quando code mode ativo) | ⏳ | VOC-06 | VOC-09 |
+| VOC-09 | Testes end-to-end + documentacao | ⏳ | VOC-08 | — |
+
+---
+
 ## Fases do Produto (visao macro)
 
 | Fase | Escopo | Sprints | Estado |
@@ -141,7 +171,10 @@
 | **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ✅ |
 | **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | ✅ |
 | **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | ✅ |
+| **v3 Fase 1** — Voice Coding: Prompt | Initial prompt tech expandido | 8 | 🏗️ |
+| **v3 Fase 2** — Voice Coding: Engine | Comandos de voz para codigo | 9 | ⏳ |
+| **v3 Fase 3** — Voice Coding: UI | Toggle, hotkey, feedback visual | 10 | ⏳ |
 
 ---
 
-*Ultima atualizacao: 2026-03-25 — v2 completo (Sprints 4-7 ✅). Todas as fases implementadas.*
+*Ultima atualizacao: 2026-03-26 — v3 Voice Coding iniciado (Sprint 8).*

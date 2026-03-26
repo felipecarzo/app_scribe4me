@@ -46,9 +46,13 @@ class Config:
     beam_size: int = 1       # 1=rapido/greedy, 5=qualidade padrao, 8-10=maximo
     best_of: int = 3         # N candidatos (so atua com beam_size=1; com beam>1 e ignorado)
 
+    # Voice Coding (Code Mode)
+    code_mode: bool = False  # quando ativo, interpreta comandos de voz como codigo
+
     # Hotkeys (pynput — Ctrl+Alt+H push-to-talk, Ctrl+Alt+T toggle, Ctrl+Q sair)
     hotkey_push_to_talk: str = "<ctrl>+<alt>+h"
     hotkey_toggle: str = "<ctrl>+<alt>+t"
+    hotkey_code_mode: str = "<ctrl>+<alt>+c"
     hotkey_quit: str = "<ctrl>+q"
 
     # Saida
