@@ -93,11 +93,18 @@ Leia os arquivos presentes em `docs/chitchat/`. Verifique:
 
 Atualize a nota do projeto no vault do Felipe para que ele saiba o que precisa fazer como **ser humano** na próxima sessão.
 
-### 6.5.1 — Identificar a nota PRJ
+### 6.5.1 — Identificar a nota PRJ pelo ID de registro
 
-Busque em `D:\secondbrain\vault\notes\` por um arquivo que contenha no frontmatter `projeto_path` ou cujo nome corresponda a `PRJ — {{PROJECT_NAME}}*`. Se não encontrar, busque por slug parcial.
+O projeto tem um ID de registro no CLAUDE.md: `VAULT_PRJ_ID: {{VAULT_PRJ_ID}}`
 
-Se a nota PRJ **não existir**, crie uma nova seguindo o padrão das existentes.
+Use Grep para encontrar a nota PRJ no vault que contenha `id: {{VAULT_PRJ_ID}}` no frontmatter:
+```bash
+grep -rl "id: {{VAULT_PRJ_ID}}" "D:/secondbrain/vault/notes/"
+```
+
+Isso retorna o arquivo exato — sem ambiguidade, sem busca por nome.
+
+Se a nota PRJ **não existir** (grep retorna vazio), crie uma nova seguindo o padrão das existentes, usando o ID `{{VAULT_PRJ_ID}}`.
 
 ### 6.5.2 — Extrair ações do Felipe (humano)
 
@@ -122,7 +129,16 @@ Do HANDOFF e ROADMAP, extraia:
 
 ### 6.5.4 — Atualizar a nota PRJ no vault
 
-Use Edit para atualizar o arquivo `PRJ — *.md` encontrado. Sobrescreva as seções:
+Use Edit para atualizar o arquivo `PRJ — *.md` encontrado.
+
+**Frontmatter (campos Dataview)** — atualize com valores reais:
+- `sprint_atual` — sprint corrente do ROADMAP
+- `progresso` — porcentagem estimada (tasks done / total)
+- `fazendo_agora` — task ativa ou próxima ação
+- `bloqueio` — bloqueio atual ou "—"
+- `ultima_atividade` — data de hoje (YYYY-MM-DD)
+
+**Corpo da nota — sobrescreva as seções:**
 
 **Status** — com o estado real atual (sprint, o que foi feito, bloqueios)
 

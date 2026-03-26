@@ -51,7 +51,10 @@ venv/
 
 # PyInstaller
 build/
+build_*/
 dist/
+dist_*/
+installer_output/
 *.spec
 
 # Models (too large for git)

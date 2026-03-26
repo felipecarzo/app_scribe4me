@@ -1,4 +1,5 @@
 # app_speedosper — Claude Code Instructions
+VAULT_PRJ_ID: PRJ-speedosper
 
 ## Projeto
 Speech-to-text local baseado em Whisper (OpenAI). Substituicao do Win+H nativo por uma solucao com transcricao precisa, pontuacao automatica real, integrada ao workflow do teclado via hotkey.
