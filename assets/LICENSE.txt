@@ -1,0 +1,44 @@
+CONTRATO DE LICENCA DE USO — SCRIBE4ME
+========================================
+
+Versao 1.0 — Marco de 2026
+
+Ao instalar ou usar o Scribe4me ("Software"), voce concorda com os termos abaixo.
+
+1. LICENCA DE USO
+   Este Software e licenciado, nao vendido. Voce recebe uma licenca pessoal,
+   nao-exclusiva e intransferivel para usar o Software em um (1) computador.
+
+2. RESTRICOES
+   Voce NAO pode:
+   - Redistribuir, sublicenciar ou vender o Software
+   - Realizar engenharia reversa, descompilar ou desmontar o Software
+   - Remover avisos de direitos autorais ou marcas do Software
+
+3. PROPRIEDADE INTELECTUAL
+   O Software e seus componentes sao protegidos por leis de direitos autorais.
+   Todos os direitos nao expressamente concedidos sao reservados.
+
+4. ISENCAO DE GARANTIA
+   O Software e fornecido "COMO ESTA", sem garantias de qualquer tipo,
+   expressas ou implicitas. O uso e por sua conta e risco.
+
+5. LIMITACAO DE RESPONSABILIDADE
+   Em nenhuma hipotese os autores serao responsaveis por danos diretos,
+   indiretos, incidentais ou consequenciais decorrentes do uso do Software.
+
+6. COMPONENTES DE TERCEIROS
+   Este Software utiliza componentes de codigo aberto (OpenAI Whisper, PyTorch,
+   entre outros) que sao distribuidos sob suas respectivas licencas.
+
+7. PRIVACIDADE
+   O Scribe4me processa audio LOCALMENTE no seu computador.
+   Nenhum audio ou texto e enviado para servidores externos.
+   O download do modelo de IA e feito uma unica vez no primeiro uso.
+
+8. TERMINO
+   Esta licenca e automaticamente encerrada se voce violar qualquer termo.
+   Ao encerrar, voce deve desinstalar e destruir todas as copias do Software.
+
+Ao clicar em "Aceito" ou instalar o Software, voce confirma que leu,
+compreendeu e concorda com todos os termos acima.
