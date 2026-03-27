@@ -1,8 +1,4 @@
-"""Interface com Whisper para transcricao (via faster-whisper / CTranslate2).
-
-Modo hibrido: faster-whisper para STT (qualidade comprovada),
-Motor Ayvu para traducao e TTS (via motor_bridge).
-"""
+"""Interface com Whisper para transcricao (via faster-whisper / CTranslate2)."""
 
 import time
 import logging
@@ -11,10 +7,9 @@ import numpy as np
 from faster_whisper import WhisperModel
 
 from src.config import Config
-from src.motor_bridge import MotorBridge
 from src.postprocess import postprocess
 
-logger = logging.getLogger("speedosper")
+logger = logging.getLogger("scribe4me")
 
 # Fallback prompt (usado se nenhum profile carregado)
 _FALLBACK_PROMPT = (
@@ -32,15 +27,11 @@ def _compute_type(device: str) -> str:
 
 
 class Transcriber:
-    """Transcreve audio usando faster-whisper (CTranslate2).
-
-    Tambem inicializa o Motor Ayvu para traducao/TTS quando necessario.
-    """
+    """Transcreve audio usando faster-whisper (CTranslate2)."""
 
     def __init__(self, config: Config):
         self.config = config
         self._model: WhisperModel | None = None
-        self._bridge: MotorBridge | None = None
         self._prompt: str = _FALLBACK_PROMPT
 
     def set_prompt(self, prompt: str) -> None:
@@ -80,19 +71,6 @@ class Transcriber:
             else:
                 raise
         logger.info("Modelo carregado em '%s'.", self.config.device)
-
-        # Inicializa Motor Ayvu para traducao/TTS (lazy — nao bloqueia)
-        self._init_bridge()
-
-    def _init_bridge(self) -> None:
-        """Inicializa o Motor Ayvu bridge para traducao/TTS."""
-        try:
-            dll_path = self.config.motor_dll_path or None
-            self._bridge = MotorBridge(dll_path=dll_path)
-            logger.info("Motor Ayvu carregado — versao %s (translate/TTS).", self._bridge.version())
-        except Exception as e:
-            logger.warning("Motor Ayvu indisponivel: %s — modo translate/voice desabilitado.", e)
-            self._bridge = None
 
     def reload_model(self, model_name: str) -> None:
         """Troca o modelo Whisper (download automatico se necessario)."""

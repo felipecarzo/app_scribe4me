@@ -8,11 +8,10 @@ from typing import Callable
 from PIL import Image, ImageDraw
 import pystray
 
-from src.config import APP_NAME, AppMode, SUPPORTED_LANGUAGES
+from src.config import APP_NAME
 from src.hardware import WHISPER_MODELS, model_label
-from src.profiles import Profile
 
-logger = logging.getLogger("speedosper.tray")
+logger = logging.getLogger("scribe4me.tray")
 
 
 class AppState(Enum):
@@ -21,7 +20,6 @@ class AppState(Enum):
     RECORDING = "recording"          # vermelho — gravando
     TRANSCRIBING = "transcribing"    # vermelho piscando — processando
     READY_TO_COPY = "ready_to_copy"  # azul — texto disponivel
-    PLAYING = "playing"              # roxo — reproduzindo audio traduzido
 
 
 # Cores por estado
@@ -31,7 +29,6 @@ _COLORS = {
     AppState.RECORDING: "#F44336",      # vermelho
     AppState.TRANSCRIBING: "#F44336",   # vermelho (pisca)
     AppState.READY_TO_COPY: "#2196F3",  # azul
-    AppState.PLAYING: "#9C27B0",        # roxo
 }
 
 _TOOLTIPS = {
@@ -40,7 +37,6 @@ _TOOLTIPS = {
     AppState.RECORDING: f"{APP_NAME} — Gravando...",
     AppState.TRANSCRIBING: f"{APP_NAME} — Transcrevendo...",
     AppState.READY_TO_COPY: f"{APP_NAME} — Texto pronto (Ctrl+V)",
-    AppState.PLAYING: f"{APP_NAME} — Reproduzindo...",
 }
 
 
@@ -48,46 +44,35 @@ def _create_icon_image(color: str, size: int = 64) -> Image.Image:
     """Cria icone com silhueta de microfone sobre circulo colorido."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    m = 2  # margem externa
+    m = 2
 
-    # Circulo de fundo
     draw.ellipse([m, m, size - m, size - m], fill=color)
 
-    # Microfone em branco (proporcional ao size)
     s = size
     white = "#FFFFFF"
 
-    # Corpo do mic (retangulo arredondado central)
-    bw = s * 0.22  # largura do corpo
-    bh = s * 0.32  # altura do corpo
+    bw = s * 0.22
+    bh = s * 0.32
     cx = s / 2
     top = s * 0.18
     draw.rounded_rectangle(
         [cx - bw / 2, top, cx + bw / 2, top + bh],
-        radius=bw / 2,
-        fill=white,
+        radius=bw / 2, fill=white,
     )
 
-    # Arco inferior (suporte em U ao redor do corpo)
     arc_w = s * 0.34
     arc_top = top + bh * 0.3
     arc_bot = top + bh + s * 0.10
     lw = max(2, int(s * 0.05))
     draw.arc(
         [cx - arc_w / 2, arc_top, cx + arc_w / 2, arc_bot],
-        start=0, end=180,
-        fill=white, width=lw,
+        start=0, end=180, fill=white, width=lw,
     )
 
-    # Haste vertical
     haste_top = arc_bot - lw / 2
     haste_bot = haste_top + s * 0.10
-    draw.line(
-        [cx, haste_top, cx, haste_bot],
-        fill=white, width=lw,
-    )
+    draw.line([cx, haste_top, cx, haste_bot], fill=white, width=lw)
 
-    # Base horizontal
     base_w = s * 0.18
     draw.line(
         [cx - base_w / 2, haste_bot, cx + base_w / 2, haste_bot],
@@ -103,7 +88,7 @@ def _create_blank_image(size: int = 64) -> Image.Image:
 
 
 class TrayIcon:
-    """Gerencia o system tray icon do SpeedOsper."""
+    """Gerencia o system tray icon do Scribe4me."""
 
     def __init__(
         self,
@@ -111,14 +96,10 @@ class TrayIcon:
         on_copy_last: Callable | None = None,
         on_open_log: Callable | None = None,
         on_model_change: Callable[[str], None] | None = None,
-        on_mode_change: Callable[[AppMode], None] | None = None,
-        on_target_lang_change: Callable[[str], None] | None = None,
         on_profile_change: Callable[[str], None] | None = None,
         on_activate: Callable | None = None,
         current_model: str = "large-v3",
         recommended_model: str = "large-v3",
-        current_mode: AppMode = AppMode.SCRIBE,
-        current_target_lang: str = "en",
         current_profile_name: str = "Tech-Dev",
         profile_names: list[str] | None = None,
         code_mode: bool = False,
@@ -128,14 +109,10 @@ class TrayIcon:
         self._on_copy_last = on_copy_last
         self._on_open_log = on_open_log
         self._on_model_change = on_model_change
-        self._on_mode_change = on_mode_change
-        self._on_target_lang_change = on_target_lang_change
         self._on_profile_change = on_profile_change
         self._on_activate = on_activate
         self._current_model = current_model
         self._recommended_model = recommended_model
-        self._current_mode = current_mode
-        self._current_target_lang = current_target_lang
         self._current_profile_name = current_profile_name
         self._profile_names = profile_names or ["Tech-Dev"]
         self._code_mode = code_mode
@@ -146,12 +123,9 @@ class TrayIcon:
 
     def _build_menu(self) -> pystray.Menu:
         """Constroi o menu de contexto."""
-        # Submenu de modelos
         model_items = []
         for name in WHISPER_MODELS:
             label = model_label(name, self._recommended_model)
-            # Checkmark no modelo atual
-            checked = name == self._current_model
             model_items.append(
                 pystray.MenuItem(
                     label,
@@ -161,36 +135,6 @@ class TrayIcon:
                 )
             )
 
-        # Submenu de modos
-        mode_items = []
-        mode_labels = {
-            AppMode.SCRIBE: "Scribe (fala -> texto)",
-            AppMode.TRANSLATE: "Translate (fala -> texto traduzido)",
-            AppMode.VOICE: "Voice (fala -> voz traduzida)",
-        }
-        for mode in AppMode:
-            mode_items.append(
-                pystray.MenuItem(
-                    mode_labels[mode],
-                    self._make_mode_callback(mode),
-                    checked=lambda item, m=mode: m == self._current_mode,
-                    radio=True,
-                )
-            )
-
-        # Submenu de idioma alvo
-        lang_items = []
-        for code, label in SUPPORTED_LANGUAGES.items():
-            lang_items.append(
-                pystray.MenuItem(
-                    f"{label} ({code})",
-                    self._make_lang_callback(code),
-                    checked=lambda item, c=code: c == self._current_target_lang,
-                    radio=True,
-                )
-            )
-
-        # Submenu de profiles
         profile_items = []
         for pname in self._profile_names:
             profile_items.append(
@@ -216,14 +160,6 @@ class TrayIcon:
                 pystray.Menu(*profile_items),
             ),
             pystray.MenuItem(
-                f"Modo: {self._current_mode.value.capitalize()}",
-                pystray.Menu(*mode_items),
-            ),
-            pystray.MenuItem(
-                f"Idioma alvo: {SUPPORTED_LANGUAGES.get(self._current_target_lang, self._current_target_lang)}",
-                pystray.Menu(*lang_items),
-            ),
-            pystray.MenuItem(
                 f"Modelo: {self._current_model.capitalize()}",
                 pystray.Menu(*model_items),
             ),
@@ -236,7 +172,6 @@ class TrayIcon:
         )
 
     def _make_profile_callback(self, profile_name: str):
-        """Cria callback para selecao de profile."""
         def callback(icon, item):
             if profile_name != self._current_profile_name:
                 self._current_profile_name = profile_name
@@ -245,28 +180,7 @@ class TrayIcon:
                     self._on_profile_change(profile_name)
         return callback
 
-    def _make_mode_callback(self, mode: AppMode):
-        """Cria callback para selecao de modo."""
-        def callback(icon, item):
-            if mode != self._current_mode:
-                self._current_mode = mode
-                self._update_menu()
-                if self._on_mode_change:
-                    self._on_mode_change(mode)
-        return callback
-
-    def _make_lang_callback(self, lang_code: str):
-        """Cria callback para selecao de idioma alvo."""
-        def callback(icon, item):
-            if lang_code != self._current_target_lang:
-                self._current_target_lang = lang_code
-                self._update_menu()
-                if self._on_target_lang_change:
-                    self._on_target_lang_change(lang_code)
-        return callback
-
     def _make_model_callback(self, model_name: str):
-        """Cria callback para selecao de modelo."""
         def callback(icon, item):
             if model_name != self._current_model:
                 self._current_model = model_name
@@ -276,19 +190,17 @@ class TrayIcon:
         return callback
 
     def _update_menu(self) -> None:
-        """Atualiza o menu apos troca de modelo."""
         if self._icon is not None:
             self._icon.menu = self._build_menu()
 
     def start(self) -> None:
         """Inicia o tray icon em thread separada."""
         self._icon = pystray.Icon(
-            name="speedosper",
+            name="scribe4me",
             icon=_create_icon_image(_COLORS[AppState.IDLE]),
             title=_TOOLTIPS[AppState.IDLE],
             menu=self._build_menu(),
         )
-        # Double-click no tray abre/fecha janela
         if self._on_activate:
             self._icon.on_activate = self._on_activate
         self._thread = threading.Thread(target=self._icon.run, daemon=True)
@@ -298,32 +210,25 @@ class TrayIcon:
         """Atualiza cor, tooltip e notificacao do icone."""
         old_state = self._state
         self._state = state
-
-        # Para o piscar se estava piscando
         self._stop_blink()
 
         if self._icon is None:
             return
 
-        # Cor ciano quando IDLE + code_mode ativo
         if state == AppState.IDLE and self._code_mode:
-            color = "#00BCD4"
-            self._icon.icon = _create_icon_image(color)
+            self._icon.icon = _create_icon_image("#00BCD4")
             self._icon.title = _TOOLTIPS[state] + " [Code]"
         else:
             self._icon.icon = _create_icon_image(_COLORS[state])
             self._icon.title = _TOOLTIPS[state]
 
-        # Inicia piscar se carregando ou transcrevendo
         if state in (AppState.LOADING, AppState.TRANSCRIBING):
             self._start_blink()
 
-        # Notificacoes
         if state != old_state:
             self._notify_state(state)
 
     def notify(self, title: str, message: str) -> None:
-        """Envia notificacao via tray icon."""
         if self._icon is not None:
             try:
                 self._icon.notify(message, title)
@@ -331,7 +236,6 @@ class TrayIcon:
                 logger.debug("Falha ao enviar notificacao", exc_info=True)
 
     def stop(self) -> None:
-        """Remove o tray icon."""
         self._stop_blink()
         if self._icon is not None:
             self._icon.stop()
@@ -339,12 +243,10 @@ class TrayIcon:
     # --- Blink ---
 
     def _start_blink(self) -> None:
-        """Inicia o piscar do icone (500ms)."""
         self._blink_visible = True
         self._blink_tick()
 
     def _blink_tick(self) -> None:
-        """Alterna entre visivel e transparente."""
         if self._state not in (AppState.LOADING, AppState.TRANSCRIBING) or self._icon is None:
             return
         self._blink_visible = not self._blink_visible
@@ -357,7 +259,6 @@ class TrayIcon:
         self._blink_timer.start()
 
     def _stop_blink(self) -> None:
-        """Para o timer de piscar."""
         if self._blink_timer is not None:
             self._blink_timer.cancel()
             self._blink_timer = None
@@ -365,13 +266,11 @@ class TrayIcon:
     # --- Notificacoes ---
 
     def _notify_state(self, state: AppState) -> None:
-        """Envia notificacao nativa de acordo com o estado."""
         messages = {
             AppState.LOADING: (APP_NAME, "Carregando modelo Whisper... aguarde."),
             AppState.RECORDING: (APP_NAME, "Gravando..."),
             AppState.TRANSCRIBING: (APP_NAME, "Processando transcricao..."),
             AppState.READY_TO_COPY: (APP_NAME, "Texto pronto! Ctrl+V para colar."),
-            AppState.PLAYING: (APP_NAME, "Reproduzindo audio traduzido..."),
         }
         if state in messages:
             title, msg = messages[state]
@@ -396,11 +295,10 @@ class TrayIcon:
             self._on_activate()
 
     def set_profile(self, profile_name: str, code_mode: bool) -> None:
-        """Atualiza profile ativo no tray (chamado pelo main)."""
+        """Atualiza profile ativo no tray."""
         self._current_profile_name = profile_name
         self._code_mode = code_mode
         self._update_menu()
-        # Atualiza cor do icone se idle
         if self._state == AppState.IDLE and self._icon is not None:
             color = "#00BCD4" if code_mode else _COLORS[AppState.IDLE]
             self._icon.icon = _create_icon_image(color)

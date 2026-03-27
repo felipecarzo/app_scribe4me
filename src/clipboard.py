@@ -10,7 +10,7 @@ from pynput.keyboard import Controller, Key
 
 from src.config import Config
 
-logger = logging.getLogger("speedosper")
+logger = logging.getLogger("scribe4me")
 
 # Mapa de nomes de tecla (string) para objetos Key do pynput
 _KEY_MAP = {

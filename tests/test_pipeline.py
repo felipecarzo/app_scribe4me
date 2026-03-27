@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock, call
 import numpy as np
 
 from src.config import Config
-from src.main import SpeedOsper
+from src.main import Scribe4me
 
 
 def _mock_segments(text: str):
@@ -22,15 +22,14 @@ class TestPipeline:
 
     def _make_app(self):
         config = Config(model="tiny", device="cpu", output_mode="clipboard")
-        with patch("src.transcriber.WhisperModel") as mock_cls, \
-             patch("src.transcriber.MotorBridge"):
+        with patch("src.transcriber.WhisperModel") as mock_cls:
             mock_model = MagicMock()
             mock_model.transcribe.return_value = (
                 _mock_segments("Texto transcrito com sucesso."), None
             )
             mock_cls.return_value = mock_model
 
-            app = SpeedOsper(config)
+            app = Scribe4me(config)
             app.transcriber.load_model()
         return app, mock_model
 

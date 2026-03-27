@@ -1,4 +1,4 @@
-"""Fixtures compartilhadas para testes do speedosper."""
+"""Fixtures compartilhadas para testes do scribe4me."""
 
 import numpy as np
 import pytest

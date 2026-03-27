@@ -1,6 +1,6 @@
 """Testes para config.py."""
 
-from src.config import Config, AppMode, SUPPORTED_LANGUAGES
+from src.config import Config
 
 
 def test_config_defaults():
@@ -15,8 +15,6 @@ def test_config_defaults():
     assert cfg.best_of == 3
     assert cfg.hotkey_push_to_talk == "<ctrl>+<alt>+h"
     assert cfg.hotkey_toggle == "<ctrl>+<alt>+t"
-    assert cfg.mode == AppMode.SCRIBE
-    assert cfg.target_language == "en"
 
 
 def test_config_override():
@@ -24,25 +22,6 @@ def test_config_override():
     assert cfg.model == "tiny"
     assert cfg.device == "cpu"
     assert cfg.output_mode == "clipboard"
-
-
-def test_app_mode_enum():
-    assert AppMode.SCRIBE.value == "scribe"
-    assert AppMode.TRANSLATE.value == "translate"
-    assert AppMode.VOICE.value == "voice"
-    assert AppMode("translate") == AppMode.TRANSLATE
-
-
-def test_supported_languages():
-    assert "pt" in SUPPORTED_LANGUAGES
-    assert "en" in SUPPORTED_LANGUAGES
-    assert len(SUPPORTED_LANGUAGES) >= 5
-
-
-def test_config_mode_override():
-    cfg = Config(mode=AppMode.TRANSLATE, target_language="es")
-    assert cfg.mode == AppMode.TRANSLATE
-    assert cfg.target_language == "es"
 
 
 def test_config_active_profile_name_default():
@@ -55,13 +34,14 @@ def test_config_active_profile_name_override():
     assert cfg.active_profile_name == "Geral"
 
 
-def test_config_no_code_mode_attr():
-    """code_mode foi removido do Config na Sprint 11."""
+def test_config_no_motor_dll_path():
+    """motor_dll_path removido na versao publica."""
     cfg = Config()
-    assert not hasattr(cfg, "code_mode")
+    assert not hasattr(cfg, "motor_dll_path")
 
 
-def test_config_no_hotkey_code_mode_attr():
-    """hotkey_code_mode foi removido do Config na Sprint 11."""
+def test_config_no_mode():
+    """AppMode removido na versao publica (STT only)."""
     cfg = Config()
-    assert not hasattr(cfg, "hotkey_code_mode")
+    assert not hasattr(cfg, "mode")
+    assert not hasattr(cfg, "target_language")

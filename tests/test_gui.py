@@ -1,4 +1,4 @@
-"""Testes para gui.py (QueueLogHandler + SpeedOsperGUI logica sem tkinter)."""
+"""Testes para gui.py (QueueLogHandler + Scribe4meGUI logica sem tkinter)."""
 
 import logging
 import queue
@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.gui import QueueLogHandler, SpeedOsperGUI
+from src.gui import QueueLogHandler, Scribe4meGUI
 
 
 # --- QueueLogHandler ---
@@ -76,9 +76,9 @@ class TestQueueLogHandler:
         assert messages == [f"msg-{i}" for i in range(10)]
 
 
-# --- SpeedOsperGUI (logica sem tkinter) ---
+# --- Scribe4meGUI (logica sem tkinter) ---
 
-class TestSpeedOsperGUIInit:
+class TestScribe4meGUIInit:
     """Testa construtor e atributos iniciais — sem start(), sem tkinter."""
 
     def _make_gui(self, **kwargs):
@@ -86,19 +86,16 @@ class TestSpeedOsperGUIInit:
         defaults = dict(
             log_queue=q,
             profile_names=["A", "B"],
-            mode_names=["scribe", "translate"],
             model_names=["large-v3", "medium"],
             current_profile="A",
-            current_mode="scribe",
             current_model="large-v3",
         )
         defaults.update(kwargs)
-        return SpeedOsperGUI(**defaults)
+        return Scribe4meGUI(**defaults)
 
     def test_defaults(self):
         gui = self._make_gui()
         assert gui._current_profile == "A"
-        assert gui._current_mode == "scribe"
         assert gui._current_model == "large-v3"
         assert gui._current_state == "Idle"
         assert gui._visible is False
@@ -107,33 +104,29 @@ class TestSpeedOsperGUIInit:
     def test_callbacks_stored(self):
         cb_record = MagicMock()
         cb_profile = MagicMock()
-        cb_mode = MagicMock()
         cb_model = MagicMock()
         gui = self._make_gui(
             on_record_toggle=cb_record,
             on_profile_change=cb_profile,
-            on_mode_change=cb_mode,
             on_model_change=cb_model,
         )
         assert gui._on_record_toggle is cb_record
         assert gui._on_profile_change is cb_profile
-        assert gui._on_mode_change is cb_mode
         assert gui._on_model_change is cb_model
 
     def test_default_lists_when_none(self):
         q = queue.Queue(maxsize=10)
-        gui = SpeedOsperGUI(log_queue=q)
+        gui = Scribe4meGUI(log_queue=q)
         assert gui._profile_names == ["Tech-Dev"]
-        assert gui._mode_names == ["scribe", "translate", "voice"]
         assert gui._model_names == ["large-v3"]
 
 
-class TestSpeedOsperGUINoRoot:
+class TestScribe4meGUINoRoot:
     """Testa metodos publicos quando _root e None (GUI nao iniciado)."""
 
     def _make_gui(self):
         q = queue.Queue(maxsize=100)
-        return SpeedOsperGUI(log_queue=q)
+        return Scribe4meGUI(log_queue=q)
 
     def test_update_state_without_root(self):
         gui = self._make_gui()
@@ -144,11 +137,6 @@ class TestSpeedOsperGUINoRoot:
         gui = self._make_gui()
         gui.update_profile("MyProfile")
         assert gui._current_profile == "MyProfile"
-
-    def test_update_mode_without_root(self):
-        gui = self._make_gui()
-        gui.update_mode("translate")
-        assert gui._current_mode == "translate"
 
     def test_update_model_without_root(self):
         gui = self._make_gui()
@@ -195,12 +183,12 @@ class TestSpeedOsperGUINoRoot:
         gui.show.assert_not_called()
 
 
-class TestSpeedOsperGUICallbacks:
+class TestScribe4meGUICallbacks:
     """Testa callbacks internos sem tkinter."""
 
     def _make_gui(self, **kwargs):
         q = queue.Queue(maxsize=100)
-        return SpeedOsperGUI(log_queue=q, **kwargs)
+        return Scribe4meGUI(log_queue=q, **kwargs)
 
     def test_on_record_click_fires_callback(self):
         cb = MagicMock()
@@ -221,14 +209,6 @@ class TestSpeedOsperGUICallbacks:
         gui._on_profile_select(None)
         cb.assert_called_once_with("MyProfile")
 
-    def test_on_mode_select_fires_callback(self):
-        cb = MagicMock()
-        gui = self._make_gui(on_mode_change=cb)
-        gui._var_mode = MagicMock()
-        gui._var_mode.get.return_value = "translate"
-        gui._on_mode_select(None)
-        cb.assert_called_once_with("translate")
-
     def test_on_model_select_fires_callback(self):
         cb = MagicMock()
         gui = self._make_gui(on_model_change=cb)
@@ -243,14 +223,6 @@ class TestSpeedOsperGUICallbacks:
         gui._var_profile = MagicMock()
         gui._var_profile.get.return_value = ""
         gui._on_profile_select(None)
-        cb.assert_not_called()
-
-    def test_on_mode_select_empty_value_no_callback(self):
-        cb = MagicMock()
-        gui = self._make_gui(on_mode_change=cb)
-        gui._var_mode = MagicMock()
-        gui._var_mode.get.return_value = ""
-        gui._on_mode_select(None)
         cb.assert_not_called()
 
     def test_on_model_select_empty_value_no_callback(self):

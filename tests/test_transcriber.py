@@ -1,4 +1,4 @@
-"""Testes para transcriber.py (hibrido: faster-whisper STT + Motor Ayvu translate/TTS)."""
+"""Testes para transcriber.py (faster-whisper STT)."""
 
 from unittest.mock import patch, MagicMock
 
@@ -21,9 +21,8 @@ class TestTranscriber:
         t = Transcriber(config)
         assert not t.is_loaded
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_load_model(self, mock_cls, mock_bridge, config):
+    def test_load_model(self, mock_cls, config):
         t = Transcriber(config)
         t.load_model()
         assert t.is_loaded
@@ -31,26 +30,23 @@ class TestTranscriber:
             config.model, device=config.device, compute_type="int8", cpu_threads=4,
         )
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_load_model_idempotent(self, mock_cls, mock_bridge, config):
+    def test_load_model_idempotent(self, mock_cls, config):
         t = Transcriber(config)
         t.load_model()
         t.load_model()
         assert mock_cls.call_count == 1
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_transcribe_short_audio_returns_empty(self, mock_cls, mock_bridge, config, short_audio):
+    def test_transcribe_short_audio_returns_empty(self, mock_cls, config, short_audio):
         t = Transcriber(config)
         t.load_model()
         result = t.transcribe(short_audio)
         assert result == ""
         mock_cls.return_value.transcribe.assert_not_called()
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_transcribe_returns_text(self, mock_cls, mock_bridge, config, sample_audio):
+    def test_transcribe_returns_text(self, mock_cls, config, sample_audio):
         mock_model = MagicMock()
         mock_model.transcribe.return_value = (_mock_segments("  Ola mundo.  "), None)
         mock_cls.return_value = mock_model
@@ -62,9 +58,8 @@ class TestTranscriber:
         assert result == "Ola mundo."
         mock_model.transcribe.assert_called_once()
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_transcribe_auto_loads_model(self, mock_cls, mock_bridge, config, sample_audio):
+    def test_transcribe_auto_loads_model(self, mock_cls, config, sample_audio):
         mock_model = MagicMock()
         mock_model.transcribe.return_value = (_mock_segments("teste"), None)
         mock_cls.return_value = mock_model
@@ -72,12 +67,11 @@ class TestTranscriber:
         t = Transcriber(config)
         result = t.transcribe(sample_audio)
 
-        assert result == "Teste"  # postprocess capitaliza primeira letra
+        assert result == "Teste"
         mock_cls.assert_called_once()
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_warm_up_runs_dummy_transcription(self, mock_cls, mock_bridge, config):
+    def test_warm_up_runs_dummy_transcription(self, mock_cls, config):
         mock_model = MagicMock()
         mock_model.transcribe.return_value = (_mock_segments(""), None)
         mock_cls.return_value = mock_model
@@ -90,15 +84,6 @@ class TestTranscriber:
         call_args = mock_model.transcribe.call_args
         audio_arg = call_args[0][0]
         assert len(audio_arg) == config.sample_rate
-
-    @patch("src.transcriber.MotorBridge")
-    @patch("src.transcriber.WhisperModel")
-    def test_bridge_initialized_on_load(self, mock_cls, mock_bridge, config):
-        """Motor Ayvu bridge e inicializado junto com o modelo."""
-        t = Transcriber(config)
-        t.load_model()
-        assert t._bridge is not None
-        mock_bridge.assert_called_once()
 
     def test_set_prompt_updates_prompt(self, config):
         t = Transcriber(config)
@@ -122,10 +107,8 @@ class TestTranscriber:
         t = Transcriber(config)
         assert t._prompt == _FALLBACK_PROMPT
 
-    @patch("src.transcriber.MotorBridge")
     @patch("src.transcriber.WhisperModel")
-    def test_transcribe_uses_current_prompt(self, mock_cls, mock_bridge, config, sample_audio):
-        """Verifica que transcribe() passa self._prompt como initial_prompt."""
+    def test_transcribe_uses_current_prompt(self, mock_cls, config, sample_audio):
         mock_model = MagicMock()
         mock_model.transcribe.return_value = (_mock_segments("teste"), None)
         mock_cls.return_value = mock_model

@@ -11,7 +11,7 @@ import logging
 import unicodedata
 from dataclasses import dataclass, field
 
-logger = logging.getLogger("speedosper.voice_commands")
+logger = logging.getLogger("scribe4me.voice_commands")
 
 
 @dataclass

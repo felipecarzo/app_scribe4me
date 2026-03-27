@@ -1,52 +1,25 @@
-"""Configuracoes do app_speedosper."""
+"""Configuracoes do Scribe4me."""
 
 import os
 from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 
 # Nome do app (usado em menus, notificacoes, mutex, logs)
-APP_NAME = os.environ.get("APP_BRAND", "SpeedOsper")
-
-
-class AppMode(Enum):
-    SCRIBE = "scribe"        # STT apenas — fala -> texto
-    TRANSLATE = "translate"  # STT + traducao — fala -> texto traduzido
-    VOICE = "voice"          # STT + traducao + TTS — fala -> voz traduzida
-
-
-# Idiomas suportados pelo motor (NLLB-200 codes)
-SUPPORTED_LANGUAGES = {
-    "pt": "Portugues",
-    "en": "English",
-    "es": "Espanol",
-    "fr": "Francais",
-    "de": "Deutsch",
-    "it": "Italiano",
-    "ja": "Japanese",
-    "zh": "Chinese",
-    "ko": "Korean",
-    "ru": "Russian",
-}
+APP_NAME = os.environ.get("APP_BRAND", "Scribe4me")
 
 
 @dataclass
 class Config:
-    # Motor Ayvu (Rust ONNX backend)
-    model: str = "large-v3"  # faster-whisper STT (large-v3 = melhor qualidade pt-BR)
+    # Modelo Whisper (faster-whisper / CTranslate2)
+    model: str = "large-v3"  # large-v3 = melhor qualidade pt-BR
     language: str = "pt"
-    device: str = "cuda"  # mantido para compatibilidade
-    motor_dll_path: str = ""  # vazio = usa MOTOR_AYVU_DLL ou path padrao
-
-    # Modo de operacao
-    mode: AppMode = AppMode.SCRIBE
-    target_language: str = "en"  # idioma alvo para traducao (modo translate/voice)
+    device: str = "cuda"  # fallback automatico para cpu se CUDA indisponivel
 
     # Qualidade da transcricao
     beam_size: int = 1       # 1=rapido/greedy, 5=qualidade padrao, 8-10=maximo
     best_of: int = 3         # N candidatos (so atua com beam_size=1; com beam>1 e ignorado)
 
-    # Profile ativo (nome do profile em %LOCALAPPDATA%/SpeedOsper/profiles/)
+    # Profile ativo (nome do profile em %LOCALAPPDATA%/Scribe4me/profiles/)
     active_profile_name: str = "Tech-Dev"
 
     # Hotkeys (pynput — Ctrl+Alt+H push-to-talk, Ctrl+Alt+T toggle, Ctrl+Q sair)

@@ -1,11 +1,8 @@
-# app_speedosper — Speech-to-text local com Whisper
-# Python 3.12 + CUDA
+# Scribe4me — Speech-to-text local com Whisper
+# Python 3.12 + CUDA (opcional, funciona com CPU)
 
-# Core — STT via faster-whisper (CTranslate2, qualidade comprovada)
+# Core — STT via faster-whisper (CTranslate2)
 faster-whisper>=1.0.0
-
-# Motor Ayvu (Rust ONNX backend via ctypes FFI) — traducao e TTS
-# Nao requer pip install — usa motor.dll compilada do projeto app_ayvu
 
 # Audio — gravacao do microfone
 sounddevice>=0.5.1

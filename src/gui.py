@@ -1,4 +1,4 @@
-"""Janela GUI opcional do SpeedOsper (tkinter, thread separada).
+"""Janela GUI opcional do Scribe4me (tkinter, thread separada).
 
 A janela e complementar ao tray — o app funciona sem ela.
 Double-click no tray abre/fecha a janela.
@@ -14,7 +14,7 @@ from typing import Callable
 
 from src.config import APP_NAME
 
-logger = logging.getLogger("speedosper.gui")
+logger = logging.getLogger("scribe4me.gui")
 
 # --- Dark Theme Colors (VS Code style) ---
 
@@ -51,33 +51,27 @@ class QueueLogHandler(logging.Handler):
 
 # --- GUI ---
 
-class SpeedOsperGUI:
-    """Janela principal do SpeedOsper (opcional — app funciona sem ela)."""
+class Scribe4meGUI:
+    """Janela principal do Scribe4me (opcional — app funciona sem ela)."""
 
     def __init__(
         self,
         log_queue: queue.Queue,
         on_record_toggle: Callable | None = None,
         on_profile_change: Callable[[str], None] | None = None,
-        on_mode_change: Callable[[str], None] | None = None,
         on_model_change: Callable[[str], None] | None = None,
         profile_names: list[str] | None = None,
-        mode_names: list[str] | None = None,
         model_names: list[str] | None = None,
         current_profile: str = "Tech-Dev",
-        current_mode: str = "scribe",
         current_model: str = "large-v3",
     ):
         self._log_queue = log_queue
         self._on_record_toggle = on_record_toggle
         self._on_profile_change = on_profile_change
-        self._on_mode_change = on_mode_change
         self._on_model_change = on_model_change
         self._profile_names = profile_names or ["Tech-Dev"]
-        self._mode_names = mode_names or ["scribe", "translate", "voice"]
         self._model_names = model_names or ["large-v3"]
         self._current_profile = current_profile
-        self._current_mode = current_mode
         self._current_model = current_model
         self._current_state = "Idle"
 
@@ -90,13 +84,11 @@ class SpeedOsperGUI:
         self._log_text: scrolledtext.ScrolledText | None = None
         self._btn_record: tk.Button | None = None
         self._var_profile: tk.StringVar | None = None
-        self._var_mode: tk.StringVar | None = None
         self._var_model: tk.StringVar | None = None
         self._lbl_state: tk.Label | None = None
         self._lbl_model: tk.Label | None = None
         self._lbl_profile: tk.Label | None = None
         self._combo_profile: ttk.Combobox | None = None
-        self._combo_mode: ttk.Combobox | None = None
         self._combo_model: ttk.Combobox | None = None
         self._is_recording = False
         self._stopped = False
@@ -172,16 +164,6 @@ class SpeedOsperGUI:
         )
         self._combo_profile.pack(side=tk.LEFT, padx=(0, 12))
         self._combo_profile.bind("<<ComboboxSelected>>", self._on_profile_select)
-
-        # Mode dropdown
-        ttk.Label(ctrl_frame, text="Modo:", style="Controls.TLabel").pack(side=tk.LEFT, padx=(0, 4))
-        self._var_mode = tk.StringVar(value=self._current_mode)
-        self._combo_mode = ttk.Combobox(
-            ctrl_frame, textvariable=self._var_mode,
-            values=self._mode_names, state="readonly", width=10,
-        )
-        self._combo_mode.pack(side=tk.LEFT, padx=(0, 12))
-        self._combo_mode.bind("<<ComboboxSelected>>", self._on_mode_select)
 
         # Model dropdown
         ttk.Label(ctrl_frame, text="Modelo:", style="Controls.TLabel").pack(side=tk.LEFT, padx=(0, 4))
@@ -261,11 +243,6 @@ class SpeedOsperGUI:
         if name and self._on_profile_change:
             self._on_profile_change(name)
 
-    def _on_mode_select(self, event) -> None:
-        mode = self._var_mode.get()
-        if mode and self._on_mode_change:
-            self._on_mode_change(mode)
-
     def _on_model_select(self, event) -> None:
         model = self._var_model.get()
         if model and self._on_model_change:
@@ -274,7 +251,7 @@ class SpeedOsperGUI:
     # --- External state updates (chamados pelo main via root.after) ---
 
     def update_state(self, state: str) -> None:
-        """Atualiza o estado exibido (chamado pelo SpeedOsper)."""
+        """Atualiza o estado exibido (chamado pelo Scribe4me)."""
         self._current_state = state
         if self._root is None:
             return
@@ -306,17 +283,6 @@ class SpeedOsperGUI:
             self._var_profile.set(name)
         if self._lbl_profile:
             self._lbl_profile.configure(text=f"Profile: {name}")
-
-    def update_mode(self, mode: str) -> None:
-        """Atualiza modo exibido."""
-        self._current_mode = mode
-        if self._root is None:
-            return
-        self._root.after(0, self._do_update_mode, mode)
-
-    def _do_update_mode(self, mode: str) -> None:
-        if self._var_mode:
-            self._var_mode.set(mode)
 
     def update_model(self, model: str) -> None:
         """Atualiza modelo exibido."""

@@ -1,6 +1,6 @@
 """Sistema de profiles customizaveis para initial_prompt do Whisper.
 
-Cada profile e um .txt em %LOCALAPPDATA%/SpeedOsper/profiles/.
+Cada profile e um .txt em %LOCALAPPDATA%/Scribe4me/profiles/.
 Formato: linha 1 = nome, linha 2 (opcional) = @code_mode, restante = prompt.
 """
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.config import APP_NAME
 
-logger = logging.getLogger("speedosper.profiles")
+logger = logging.getLogger("scribe4me.profiles")
 
 PROFILES_DIR = Path(os.environ.get("LOCALAPPDATA", ".")) / APP_NAME / "profiles"
 

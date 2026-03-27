@@ -1,4 +1,4 @@
-"""Entry point para o SpeedOsper (usado pelo PyInstaller e execucao direta)."""
+"""Entry point para o Scribe4me (usado pelo PyInstaller e execucao direta)."""
 
 from src.main import main
 
