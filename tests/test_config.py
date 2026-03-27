@@ -43,3 +43,25 @@ def test_config_mode_override():
     cfg = Config(mode=AppMode.TRANSLATE, target_language="es")
     assert cfg.mode == AppMode.TRANSLATE
     assert cfg.target_language == "es"
+
+
+def test_config_active_profile_name_default():
+    cfg = Config()
+    assert cfg.active_profile_name == "Tech-Dev"
+
+
+def test_config_active_profile_name_override():
+    cfg = Config(active_profile_name="Geral")
+    assert cfg.active_profile_name == "Geral"
+
+
+def test_config_no_code_mode_attr():
+    """code_mode foi removido do Config na Sprint 11."""
+    cfg = Config()
+    assert not hasattr(cfg, "code_mode")
+
+
+def test_config_no_hotkey_code_mode_attr():
+    """hotkey_code_mode foi removido do Config na Sprint 11."""
+    cfg = Config()
+    assert not hasattr(cfg, "hotkey_code_mode")

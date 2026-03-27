@@ -10,6 +10,7 @@ import pystray
 
 from src.config import APP_NAME, AppMode, SUPPORTED_LANGUAGES
 from src.hardware import WHISPER_MODELS, model_label
+from src.profiles import Profile
 
 logger = logging.getLogger("speedosper.tray")
 
@@ -44,11 +45,55 @@ _TOOLTIPS = {
 
 
 def _create_icon_image(color: str, size: int = 64) -> Image.Image:
-    """Cria icone circular com a cor do estado."""
+    """Cria icone com silhueta de microfone sobre circulo colorido."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    margin = 4
-    draw.ellipse([margin, margin, size - margin, size - margin], fill=color)
+    m = 2  # margem externa
+
+    # Circulo de fundo
+    draw.ellipse([m, m, size - m, size - m], fill=color)
+
+    # Microfone em branco (proporcional ao size)
+    s = size
+    white = "#FFFFFF"
+
+    # Corpo do mic (retangulo arredondado central)
+    bw = s * 0.22  # largura do corpo
+    bh = s * 0.32  # altura do corpo
+    cx = s / 2
+    top = s * 0.18
+    draw.rounded_rectangle(
+        [cx - bw / 2, top, cx + bw / 2, top + bh],
+        radius=bw / 2,
+        fill=white,
+    )
+
+    # Arco inferior (suporte em U ao redor do corpo)
+    arc_w = s * 0.34
+    arc_top = top + bh * 0.3
+    arc_bot = top + bh + s * 0.10
+    lw = max(2, int(s * 0.05))
+    draw.arc(
+        [cx - arc_w / 2, arc_top, cx + arc_w / 2, arc_bot],
+        start=0, end=180,
+        fill=white, width=lw,
+    )
+
+    # Haste vertical
+    haste_top = arc_bot - lw / 2
+    haste_bot = haste_top + s * 0.10
+    draw.line(
+        [cx, haste_top, cx, haste_bot],
+        fill=white, width=lw,
+    )
+
+    # Base horizontal
+    base_w = s * 0.18
+    draw.line(
+        [cx - base_w / 2, haste_bot, cx + base_w / 2, haste_bot],
+        fill=white, width=lw,
+    )
+
     return img
 
 
@@ -68,11 +113,13 @@ class TrayIcon:
         on_model_change: Callable[[str], None] | None = None,
         on_mode_change: Callable[[AppMode], None] | None = None,
         on_target_lang_change: Callable[[str], None] | None = None,
-        on_code_mode_toggle: Callable | None = None,
+        on_profile_change: Callable[[str], None] | None = None,
         current_model: str = "large-v3",
         recommended_model: str = "large-v3",
         current_mode: AppMode = AppMode.SCRIBE,
         current_target_lang: str = "en",
+        current_profile_name: str = "Tech-Dev",
+        profile_names: list[str] | None = None,
         code_mode: bool = False,
     ):
         self._state = AppState.IDLE
@@ -82,11 +129,13 @@ class TrayIcon:
         self._on_model_change = on_model_change
         self._on_mode_change = on_mode_change
         self._on_target_lang_change = on_target_lang_change
-        self._on_code_mode_toggle = on_code_mode_toggle
+        self._on_profile_change = on_profile_change
         self._current_model = current_model
         self._recommended_model = recommended_model
         self._current_mode = current_mode
         self._current_target_lang = current_target_lang
+        self._current_profile_name = current_profile_name
+        self._profile_names = profile_names or ["Tech-Dev"]
         self._code_mode = code_mode
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
@@ -139,20 +188,30 @@ class TrayIcon:
                 )
             )
 
-        code_label = "Code Mode: ON" if self._code_mode else "Code Mode: OFF"
+        # Submenu de profiles
+        profile_items = []
+        for pname in self._profile_names:
+            profile_items.append(
+                pystray.MenuItem(
+                    pname,
+                    self._make_profile_callback(pname),
+                    checked=lambda item, n=pname: n == self._current_profile_name,
+                    radio=True,
+                )
+            )
+
+        code_suffix = " [Code]" if self._code_mode else ""
 
         return pystray.Menu(
             pystray.MenuItem(APP_NAME, None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Ctrl+Alt+H  —  Gravar (segura e fala)", None, enabled=False),
             pystray.MenuItem("Ctrl+Alt+T  —  Toggle (iniciar/parar)", None, enabled=False),
-            pystray.MenuItem("Ctrl+Alt+C  —  Code Mode", None, enabled=False),
             pystray.MenuItem("Ctrl+Q            —  Sair", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
-                code_label,
-                self._code_mode_clicked,
-                checked=lambda item: self._code_mode,
+                f"Profile: {self._current_profile_name}{code_suffix}",
+                pystray.Menu(*profile_items),
             ),
             pystray.MenuItem(
                 f"Modo: {self._current_mode.value.capitalize()}",
@@ -172,6 +231,16 @@ class TrayIcon:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Sair", self._quit_clicked),
         )
+
+    def _make_profile_callback(self, profile_name: str):
+        """Cria callback para selecao de profile."""
+        def callback(icon, item):
+            if profile_name != self._current_profile_name:
+                self._current_profile_name = profile_name
+                self._update_menu()
+                if self._on_profile_change:
+                    self._on_profile_change(profile_name)
+        return callback
 
     def _make_mode_callback(self, mode: AppMode):
         """Cria callback para selecao de modo."""
@@ -316,17 +385,14 @@ class TrayIcon:
         if self._on_open_log:
             self._on_open_log()
 
-    def _code_mode_clicked(self, icon, item) -> None:
-        if self._on_code_mode_toggle:
-            self._on_code_mode_toggle()
-
-    def set_code_mode(self, enabled: bool) -> None:
-        """Atualiza estado do code mode no tray (chamado pelo main)."""
-        self._code_mode = enabled
+    def set_profile(self, profile_name: str, code_mode: bool) -> None:
+        """Atualiza profile ativo no tray (chamado pelo main)."""
+        self._current_profile_name = profile_name
+        self._code_mode = code_mode
         self._update_menu()
         # Atualiza cor do icone se idle
         if self._state == AppState.IDLE and self._icon is not None:
-            color = "#00BCD4" if enabled else _COLORS[AppState.IDLE]
+            color = "#00BCD4" if code_mode else _COLORS[AppState.IDLE]
             self._icon.icon = _create_icon_image(color)
-            suffix = " [Code]" if enabled else ""
+            suffix = " [Code]" if code_mode else ""
             self._icon.title = _TOOLTIPS[AppState.IDLE] + suffix

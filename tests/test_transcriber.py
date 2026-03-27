@@ -99,3 +99,42 @@ class TestTranscriber:
         t.load_model()
         assert t._bridge is not None
         mock_bridge.assert_called_once()
+
+    def test_set_prompt_updates_prompt(self, config):
+        t = Transcriber(config)
+        t.set_prompt("Novo prompt customizado.")
+        assert t._prompt == "Novo prompt customizado."
+
+    def test_set_prompt_empty_uses_fallback(self, config):
+        from src.transcriber import _FALLBACK_PROMPT
+        t = Transcriber(config)
+        t.set_prompt("")
+        assert t._prompt == _FALLBACK_PROMPT
+
+    def test_set_prompt_none_uses_fallback(self, config):
+        from src.transcriber import _FALLBACK_PROMPT
+        t = Transcriber(config)
+        t.set_prompt(None)
+        assert t._prompt == _FALLBACK_PROMPT
+
+    def test_initial_prompt_is_fallback(self, config):
+        from src.transcriber import _FALLBACK_PROMPT
+        t = Transcriber(config)
+        assert t._prompt == _FALLBACK_PROMPT
+
+    @patch("src.transcriber.MotorBridge")
+    @patch("src.transcriber.WhisperModel")
+    def test_transcribe_uses_current_prompt(self, mock_cls, mock_bridge, config, sample_audio):
+        """Verifica que transcribe() passa self._prompt como initial_prompt."""
+        mock_model = MagicMock()
+        mock_model.transcribe.return_value = (_mock_segments("teste"), None)
+        mock_cls.return_value = mock_model
+
+        t = Transcriber(config)
+        custom_prompt = "Meu prompt customizado."
+        t.set_prompt(custom_prompt)
+        t.load_model()
+        t.transcribe(sample_audio)
+
+        call_kwargs = mock_model.transcribe.call_args[1]
+        assert call_kwargs["initial_prompt"] == custom_prompt

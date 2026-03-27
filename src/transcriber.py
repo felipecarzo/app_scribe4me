@@ -16,19 +16,11 @@ from src.postprocess import postprocess
 
 logger = logging.getLogger("speedosper")
 
-# Prompt que induz pontuacao natural e vocabulario tecnico no Whisper.
-# Limite: ~224 tokens. Texto coerente com termos tech usados naturalmente.
-_PUNCTUATION_PROMPT = (
-    "Fiz o deploy no staging e rodei o pipeline de CI/CD pelo GitHub Actions. "
-    "O code review apontou que o endpoint da API precisa de rate limiting e throttling "
-    "com token bucket no middleware. Vou commitar o fix na branch develop e abrir um "
-    "pull request antes do merge na main. "
-    "No frontend, o componente React com async/await no callback estava dando exception "
-    "no try/catch. Rodei o debug com breakpoint e vi no stack trace que o import do "
-    "módulo SQL do database ORM tinha um bug no query builder. "
-    "O Kubernetes cluster no Docker precisa de um load balancer. Instalei via npm e pip "
-    "no localhost. O framework do backend usa class, function, method com parâmetro "
-    "e return tipados. Atualizei o changelog e o repository no Git."
+# Fallback prompt (usado se nenhum profile carregado)
+_FALLBACK_PROMPT = (
+    "Olá, tudo bem? Sim, estou trabalhando no projeto. "
+    "Vamos resolver isso agora, ok? Preciso que você faça o seguinte: "
+    "primeiro, abra o arquivo; depois, edite a configuração."
 )
 
 
@@ -49,6 +41,12 @@ class Transcriber:
         self.config = config
         self._model: WhisperModel | None = None
         self._bridge: MotorBridge | None = None
+        self._prompt: str = _FALLBACK_PROMPT
+
+    def set_prompt(self, prompt: str) -> None:
+        """Atualiza o initial_prompt (chamado ao trocar profile)."""
+        self._prompt = prompt or _FALLBACK_PROMPT
+        logger.info("Prompt atualizado (%d chars).", len(self._prompt))
 
     def load_model(self) -> None:
         """Carrega o modelo Whisper (chamado uma vez no startup)."""
@@ -141,7 +139,7 @@ class Transcriber:
         segments, _info = self._model.transcribe(
             audio,
             language=self.config.language,
-            initial_prompt=_PUNCTUATION_PROMPT,
+            initial_prompt=self._prompt,
             condition_on_previous_text=False,
             beam_size=self.config.beam_size,
             best_of=self.config.best_of,

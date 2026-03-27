@@ -17,6 +17,7 @@ from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
 from src.model_prefetch import prefetch_models_async
 from src.player import AudioPlayer
+from src.profiles import list_profiles, get_profile_by_name, get_default_profile, Profile
 from src.tray import TrayIcon, AppState
 from src.voice_commands import VoiceCommandEngine
 
@@ -61,9 +62,16 @@ class SpeedOsper:
         self._ready_timer: threading.Timer | None = None
         self._log_file: Path | None = None
 
+        # Carrega profile ativo
+        self._active_profile = self._load_initial_profile()
+        self.transcriber.set_prompt(self._active_profile.prompt)
+
         # Detecta hardware e recomenda modelo
         self._hw = detect_hardware()
         self._recommended_model = recommend_model(self._hw)
+
+        # Lista nomes de profiles para o tray
+        profile_names = [p.name for p in list_profiles()]
 
         self._tray = TrayIcon(
             on_quit=self._request_quit,
@@ -72,12 +80,14 @@ class SpeedOsper:
             on_model_change=self._change_model,
             on_mode_change=self._change_mode,
             on_target_lang_change=self._change_target_lang,
-            on_code_mode_toggle=self._toggle_code_mode,
+            on_profile_change=self._change_profile,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
             current_mode=self.config.mode,
             current_target_lang=self.config.target_language,
-            code_mode=self.config.code_mode,
+            current_profile_name=self._active_profile.name,
+            profile_names=profile_names,
+            code_mode=self._active_profile.code_mode,
         )
 
         # Tracking de teclas modificadoras para detectar combinacoes
@@ -144,13 +154,30 @@ class SpeedOsper:
         logger.info("Idioma alvo alterado para: %s (%s)", lang_name, lang_code)
         self._tray.notify(APP_NAME, f"Idioma alvo: {lang_name}")
 
-    def _toggle_code_mode(self) -> None:
-        """Liga/desliga code mode."""
-        self.config.code_mode = not self.config.code_mode
-        state = "ON" if self.config.code_mode else "OFF"
-        logger.info("Code Mode: %s", state)
-        self._tray.set_code_mode(self.config.code_mode)
-        self._tray.notify(APP_NAME, f"Code Mode: {state}")
+    def _load_initial_profile(self) -> Profile:
+        """Carrega profile configurado ou default."""
+        profile = get_profile_by_name(self.config.active_profile_name)
+        if profile:
+            logger.info("Profile carregado: '%s' (code_mode=%s)", profile.name, profile.code_mode)
+            return profile
+        default = get_default_profile()
+        logger.info("Profile '%s' nao encontrado, usando default: '%s'",
+                     self.config.active_profile_name, default.name)
+        return default
+
+    def _change_profile(self, profile_name: str) -> None:
+        """Troca o profile ativo."""
+        profile = get_profile_by_name(profile_name)
+        if not profile:
+            logger.warning("Profile '%s' nao encontrado.", profile_name)
+            return
+        self._active_profile = profile
+        self.config.active_profile_name = profile_name
+        self.transcriber.set_prompt(profile.prompt)
+        self._tray.set_profile(profile.name, profile.code_mode)
+        code_suffix = " [Code]" if profile.code_mode else ""
+        logger.info("Profile trocado para '%s'%s", profile.name, code_suffix)
+        self._tray.notify(APP_NAME, f"Profile: {profile.name}{code_suffix}")
 
     def _change_model(self, model_name: str) -> None:
         """Troca o modelo Whisper em background."""
@@ -229,7 +256,7 @@ class SpeedOsper:
         text = self.transcriber.transcribe(audio)
         if not text:
             return ""
-        if self.config.code_mode:
+        if self._active_profile.code_mode:
             results = self._voice_engine.process(text)
             self.output.send_command_results(results)
             logger.info("[code_mode] %s -> %d comando(s)", text, len(results))
@@ -306,7 +333,6 @@ class SpeedOsper:
     _VK_H = 72
     _VK_T = 84
     _VK_Q = 81
-    _VK_C = 67
 
     @staticmethod
     def _get_vk(key) -> int | None:
@@ -332,11 +358,6 @@ class SpeedOsper:
 
         # Bloqueia hotkeys durante loading
         if self._tray._state == AppState.LOADING:
-            return
-
-        # Ctrl+Alt+C -> toggle code mode
-        if vk == self._VK_C and self._mod_ctrl() and self._mod_alt():
-            self._toggle_code_mode()
             return
 
         # Ctrl+Alt+T -> toggle
@@ -403,10 +424,10 @@ class SpeedOsper:
 
         logger.info("Pronto!")
         logger.info("  Modo:         %s", self.config.mode.value)
+        logger.info("  Profile:      %s (code_mode=%s)", self._active_profile.name, self._active_profile.code_mode)
         logger.info("  Idioma alvo:  %s", self.config.target_language)
         logger.info("  Push-to-talk: Ctrl+Alt+H (segura e fala)")
         logger.info("  Toggle:       Ctrl+Alt+T (aperta pra iniciar/parar)")
-        logger.info("  Code Mode:    Ctrl+Alt+C (liga/desliga)")
         logger.info("  Saida:        %s", self.config.output_mode)
         logger.info("  Sair:         Ctrl+Q")
 
