@@ -31,3 +31,4 @@ Thumbs.db
 
 # Models (downloaded at runtime)
 models/
+.claude/
