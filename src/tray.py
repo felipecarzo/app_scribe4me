@@ -24,11 +24,11 @@ class AppState(Enum):
 
 # Cores por estado
 _COLORS = {
-    AppState.LOADING: "#FFC107",        # amarelo
-    AppState.IDLE: "#4CAF50",           # verde
-    AppState.RECORDING: "#F44336",      # vermelho
-    AppState.TRANSCRIBING: "#F44336",   # vermelho (pisca)
-    AppState.READY_TO_COPY: "#2196F3",  # azul
+    AppState.LOADING: (255, 193, 7),        # amarelo
+    AppState.IDLE: (76, 175, 80),           # verde
+    AppState.RECORDING: (244, 67, 54),      # vermelho
+    AppState.TRANSCRIBING: (244, 67, 54),   # vermelho (pisca)
+    AppState.READY_TO_COPY: (33, 150, 243), # azul
 }
 
 _TOOLTIPS = {
@@ -40,12 +40,51 @@ _TOOLTIPS = {
 }
 
 
-def _create_icon_image(color: str, size: int = 64) -> Image.Image:
-    """Cria icone circular com a cor do estado."""
+def _draw_mic_silhouette(draw: ImageDraw.Draw, cx: int, cy: int, s: float, color="white"):
+    """Desenha silhueta de microfone simples e solida, legivel em 16x16."""
+    w = max(1, int(2 * s))
+
+    # Capsula (oval preenchida)
+    cap_w = int(8 * s)
+    cap_h = int(14 * s)
+    cap_top = cy - int(10 * s)
+    draw.rounded_rectangle(
+        [cx - cap_w, cap_top, cx + cap_w, cap_top + cap_h],
+        radius=cap_w,
+        fill=color,
+    )
+
+    # Arco U (suporte)
+    arc_w = int(11 * s)
+    arc_top = cap_top + cap_h - int(5 * s)
+    arc_h = int(10 * s)
+    draw.arc(
+        [cx - arc_w, arc_top, cx + arc_w, arc_top + arc_h * 2],
+        start=0, end=180,
+        fill=color,
+        width=w,
+    )
+
+    # Haste vertical
+    haste_top = arc_top + arc_h
+    haste_bot = haste_top + int(5 * s)
+    draw.line([cx, haste_top, cx, haste_bot], fill=color, width=w)
+
+    # Base horizontal
+    base_hw = int(6 * s)
+    draw.line([cx - base_hw, haste_bot, cx + base_hw, haste_bot], fill=color, width=w)
+
+
+def _create_state_icon(color: tuple[int, int, int], size: int = 64) -> Image.Image:
+    """Cria icone colorido com silhueta de microfone branca."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    margin = 4
+    margin = 2
     draw.ellipse([margin, margin, size - margin, size - margin], fill=color)
+
+    s = size / 64
+    cx, cy = size // 2, size // 2
+    _draw_mic_silhouette(draw, cx, cy, s, color="white")
     return img
 
 
@@ -63,6 +102,8 @@ class TrayIcon:
         on_copy_last: Callable | None = None,
         on_open_log: Callable | None = None,
         on_model_change: Callable[[str], None] | None = None,
+        on_edit_prompt: Callable | None = None,
+        on_help: Callable | None = None,
         current_model: str = "large",
         recommended_model: str = "large",
     ):
@@ -71,12 +112,18 @@ class TrayIcon:
         self._on_copy_last = on_copy_last
         self._on_open_log = on_open_log
         self._on_model_change = on_model_change
+        self._on_edit_prompt = on_edit_prompt
+        self._on_help = on_help
         self._current_model = current_model
         self._recommended_model = recommended_model
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
         self._blink_timer: threading.Timer | None = None
         self._blink_visible = True
+
+    def _state_icon(self, state: AppState, size: int = 64) -> Image.Image:
+        """Retorna o icone do tray para o estado dado."""
+        return _create_state_icon(_COLORS[state], size)
 
     def _build_menu(self) -> pystray.Menu:
         """Constroi o menu de contexto."""
@@ -96,7 +143,7 @@ class TrayIcon:
             )
 
         return pystray.Menu(
-            pystray.MenuItem(APP_NAME, None, enabled=False),
+            pystray.MenuItem(APP_NAME, self._help_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Ctrl+Alt+H  —  Gravar (segura e fala)", None, enabled=False),
             pystray.MenuItem("Ctrl+Alt+T  —  Toggle (iniciar/parar)", None, enabled=False),
@@ -106,9 +153,11 @@ class TrayIcon:
                 f"Modelo: {self._current_model.capitalize()}",
                 pystray.Menu(*model_items),
             ),
+            pystray.MenuItem("Editar prompt", self._edit_prompt_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Copiar ultimo texto", self._copy_last_clicked),
             pystray.MenuItem("Abrir log", self._open_log_clicked),
+            pystray.MenuItem("Ajuda", self._help_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Sair", self._quit_clicked),
         )
@@ -132,7 +181,7 @@ class TrayIcon:
         """Inicia o tray icon em thread separada."""
         self._icon = pystray.Icon(
             name="scribe4me",
-            icon=_create_icon_image(_COLORS[AppState.IDLE]),
+            icon=self._state_icon(AppState.IDLE),
             title=_TOOLTIPS[AppState.IDLE],
             menu=self._build_menu(),
         )
@@ -150,7 +199,7 @@ class TrayIcon:
         if self._icon is None:
             return
 
-        self._icon.icon = _create_icon_image(_COLORS[state])
+        self._icon.icon = self._state_icon(state)
         self._icon.title = _TOOLTIPS[state]
 
         # Inicia piscar se carregando ou transcrevendo
@@ -188,7 +237,7 @@ class TrayIcon:
             return
         self._blink_visible = not self._blink_visible
         if self._blink_visible:
-            self._icon.icon = _create_icon_image(_COLORS[self._state])
+            self._icon.icon = self._state_icon(self._state)
         else:
             self._icon.icon = _create_blank_image()
         self._blink_timer = threading.Timer(0.5, self._blink_tick)
@@ -228,3 +277,11 @@ class TrayIcon:
     def _open_log_clicked(self, icon, item) -> None:
         if self._on_open_log:
             self._on_open_log()
+
+    def _edit_prompt_clicked(self, icon, item) -> None:
+        if self._on_edit_prompt:
+            self._on_edit_prompt()
+
+    def _help_clicked(self, icon, item) -> None:
+        if self._on_help:
+            self._on_help()

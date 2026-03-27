@@ -2,12 +2,12 @@
 
 from unittest.mock import patch, MagicMock
 
-from src.tray import TrayIcon, AppState, _create_icon_image, _COLORS
+from src.tray import TrayIcon, AppState, _create_state_icon, _COLORS
 
 
 class TestTrayIcon:
-    def test_create_icon_image_returns_rgba(self):
-        img = _create_icon_image("#FF0000", size=32)
+    def test_create_state_icon_returns_rgba(self):
+        img = _create_state_icon((255, 0, 0), size=32)
         assert img.size == (32, 32)
         assert img.mode == "RGBA"
 
