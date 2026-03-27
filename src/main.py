@@ -5,16 +5,18 @@ import os
 import sys
 import time
 import threading
+import webbrowser
 from pathlib import Path
 
 import pyperclip
 from pynput import keyboard as kb
 
-from src.config import Config, APP_NAME
+from src.config import Config, APP_NAME, GITHUB_URL
 from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
+from src.prompt_editor import open_prompt_editor
 from src.tray import TrayIcon, AppState
 
 logger = logging.getLogger("scribe4me")
@@ -65,6 +67,8 @@ class Scribe4me:
             on_copy_last=self._copy_last_text,
             on_open_log=self._open_log,
             on_model_change=self._change_model,
+            on_edit_prompt=self._edit_prompt,
+            on_help=self._open_help,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
         )
@@ -95,6 +99,21 @@ class Scribe4me:
         """Abre o arquivo de log no editor padrao."""
         if self._log_file and self._log_file.exists():
             os.startfile(str(self._log_file))
+
+    def _edit_prompt(self) -> None:
+        """Abre a janela de edicao do prompt personalizado."""
+        def _on_save(prompt: str):
+            self.transcriber.set_custom_prompt(prompt)
+            label = "personalizado" if prompt else "padrao"
+            self._tray.notify(APP_NAME, f"Prompt {label} salvo.")
+            logger.info("Prompt atualizado via editor (%s).", label)
+
+        open_prompt_editor(on_save=_on_save)
+
+    def _open_help(self) -> None:
+        """Abre a pagina do projeto no GitHub."""
+        webbrowser.open(GITHUB_URL)
+        logger.info("Ajuda aberta no navegador.")
 
     def _change_model(self, model_name: str) -> None:
         """Troca o modelo Whisper em background."""

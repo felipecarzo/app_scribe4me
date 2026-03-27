@@ -34,41 +34,40 @@ def _get_handwriting_font(size: int):
     return ImageFont.load_default()
 
 
-def _draw_mic_lineart(draw, cx, cy, s, color, width):
-    """Desenha microfone minimalista em line art — proporcoes reais."""
-    w = width
-
-    # Corpo do mic (capsula mais alta e estreita, proporcao real)
+def _draw_mic_solid(draw, cx, cy, s, fill_color, outline_color, line_w):
+    """Desenha microfone com capsula preenchida — legivel em qualquer tamanho."""
+    # Corpo do mic (capsula preenchida)
     cap_w = int(22 * s)
     cap_h = int(58 * s)
     cap_top = cy - int(44 * s)
     draw.rounded_rectangle(
         [cx - cap_w, cap_top, cx + cap_w, cap_top + cap_h],
         radius=cap_w,
-        outline=color,
-        width=w,
+        fill=fill_color,
+        outline=outline_color,
+        width=max(1, line_w // 2),
     )
 
-    # Arco U (suporte — mais justo ao corpo)
+    # Arco U (suporte)
     arc_w = int(32 * s)
     arc_top = cap_top + cap_h - int(16 * s)
     arc_h = int(28 * s)
     draw.arc(
         [cx - arc_w, arc_top, cx + arc_w, arc_top + arc_h * 2],
         start=0, end=180,
-        fill=color,
-        width=w,
+        fill=outline_color,
+        width=line_w,
     )
 
     # Haste
     haste_top = arc_top + arc_h
     haste_bot = haste_top + int(18 * s)
-    draw.line([cx, haste_top, cx, haste_bot], fill=color, width=w)
+    draw.line([cx, haste_top, cx, haste_bot], fill=outline_color, width=line_w)
 
     # Base
     base_hw = int(18 * s)
     draw.line([cx - base_hw, haste_bot, cx + base_hw, haste_bot],
-              fill=color, width=w)
+              fill=outline_color, width=line_w)
 
     return cap_top, cap_top + cap_h // 2  # retorna topo e centro do mic
 
@@ -107,9 +106,9 @@ def create_icon(size: int = 256) -> Image.Image:
         fill=BG_DARK,
     )
 
-    # Microfone centralizado
+    # Microfone centralizado (capsula preenchida para legibilidade)
     line_w = max(2, int(3.5 * s))
-    mic_top, mic_mid = _draw_mic_lineart(draw, cx, cy, s, WHITE, line_w)
+    mic_top, mic_mid = _draw_mic_solid(draw, cx, cy, s, WHITE_DIM, WHITE, line_w)
 
     # Ondas sonoras sutis (2 arcos finos saindo do mic)
     wave_w = max(1, int(2 * s))
@@ -148,7 +147,7 @@ def create_banner(width: int = 1280, height: int = 480) -> Image.Image:
     mic_cx = int(200 * s)
     mic_cy = height // 2
     mic_line_w = max(3, int(4 * s))
-    mic_top, mic_mid = _draw_mic_lineart(draw, mic_cx, mic_cy, s * 1.5, WHITE, mic_line_w)
+    mic_top, mic_mid = _draw_mic_solid(draw, mic_cx, mic_cy, s * 1.5, WHITE_DIM, WHITE, mic_line_w)
 
     # Fontes
     font_big = _get_handwriting_font(int(90 * s))
@@ -218,25 +217,28 @@ def main():
     """Gera todos os assets visuais."""
     os.makedirs("assets", exist_ok=True)
 
-    # --- ICO com multiplas resolucoes ---
-    sizes = [16, 32, 48, 64, 128, 256]
-    images = [create_icon(s) for s in sizes]
+    # Gera icone em alta resolucao e faz downscale para melhor antialiasing
+    master = create_icon(1024)
 
-    images[0].save(
+    # --- ICO com multiplas resolucoes (downscale do master) ---
+    sizes = [16, 24, 32, 48, 64, 128, 256]
+    images = [master.resize((s, s), Image.LANCZOS) for s in sizes]
+
+    # Salva ICO: a maior imagem como principal, menores como append
+    images[-1].save(
         "assets/scribe4me.ico",
         format="ICO",
         sizes=[(s, s) for s in sizes],
-        append_images=images[1:],
+        append_images=images[:-1],
     )
-    print("Icone gerado: assets/scribe4me.ico")
+    print(f"Icone gerado: assets/scribe4me.ico ({os.path.getsize('assets/scribe4me.ico')} bytes)")
 
     # --- PNG 256 ---
-    images[-1].save("assets/scribe4me_256.png")
+    master.resize((256, 256), Image.LANCZOS).save("assets/scribe4me_256.png")
     print("PNG 256 gerado: assets/scribe4me_256.png")
 
     # --- PNG 512 (para GitHub profile/social) ---
-    icon_512 = create_icon(512)
-    icon_512.save("assets/scribe4me_512.png")
+    master.resize((512, 512), Image.LANCZOS).save("assets/scribe4me_512.png")
     print("PNG 512 gerado: assets/scribe4me_512.png")
 
     # --- Banner para README ---

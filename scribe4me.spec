@@ -9,14 +9,18 @@ from pathlib import Path
 block_cipher = None
 
 BASE = os.path.abspath('.')
-VENV = os.environ.get('VIRTUAL_ENV', os.path.join(BASE, 'venv'))
+
+# Detecta o diretorio do faster_whisper (funciona com ou sem venv)
+import faster_whisper as _fw
+_FW_DIR = os.path.dirname(_fw.__file__)
 
 a = Analysis(
     ['run_scribe4me.py'],
     pathex=[BASE],
     binaries=[],
     datas=[
-        (os.path.join(VENV, 'Lib', 'site-packages', 'faster_whisper', 'assets'), os.path.join('faster_whisper', 'assets')),
+        (os.path.join(_FW_DIR, 'assets'), os.path.join('faster_whisper', 'assets')),
+        (os.path.join(BASE, 'assets', 'scribe4me_256.png'), 'assets'),
     ],
     hiddenimports=[
         'faster_whisper',
@@ -34,7 +38,6 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[
         'matplotlib',
-        'tkinter',
         'torch',
         'torchaudio',
         'torchvision',

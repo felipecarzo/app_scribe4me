@@ -1,11 +1,45 @@
 """Configuracoes do Scribe4me."""
 
+import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 # Nome do app (usado em menus, notificacoes, mutex, logs)
 APP_NAME = "Scribe4me"
+
+# URL do repositorio (usado no Help)
+GITHUB_URL = "https://github.com/felipecarzo/app_scribe4me"
+
+# Diretorio de dados do app (%LOCALAPPDATA%/Scribe4me/)
+APP_DATA_DIR = Path(os.environ.get("LOCALAPPDATA", ".")) / APP_NAME
+
+# Arquivo de configuracao persistente
+_CONFIG_FILE = APP_DATA_DIR / "config.json"
+
+
+def load_custom_prompt() -> str:
+    """Carrega o prompt personalizado salvo, ou retorna string vazia."""
+    try:
+        if _CONFIG_FILE.exists():
+            data = json.loads(_CONFIG_FILE.read_text(encoding="utf-8"))
+            return data.get("custom_prompt", "")
+    except Exception:
+        pass
+    return ""
+
+
+def save_custom_prompt(prompt: str) -> None:
+    """Salva o prompt personalizado no config.json."""
+    APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    data = {}
+    try:
+        if _CONFIG_FILE.exists():
+            data = json.loads(_CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    data["custom_prompt"] = prompt
+    _CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 @dataclass

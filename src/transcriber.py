@@ -6,13 +6,13 @@ import logging
 import numpy as np
 from faster_whisper import WhisperModel
 
-from src.config import Config
+from src.config import Config, load_custom_prompt
 from src.postprocess import postprocess
 
 logger = logging.getLogger("scribe4me")
 
-# Prompt que induz pontuacao natural no Whisper
-_PUNCTUATION_PROMPT = (
+# Prompt padrao que induz pontuacao natural no Whisper
+_DEFAULT_PROMPT = (
     "Olá, tudo bem? Sim, estou trabalhando no projeto. "
     "Vamos resolver isso agora, ok? Preciso que você faça o seguinte: "
     "primeiro, abra o arquivo; depois, edite a configuração."
@@ -32,6 +32,17 @@ class Transcriber:
     def __init__(self, config: Config):
         self.config = config
         self._model: WhisperModel | None = None
+        self._custom_prompt: str = load_custom_prompt()
+
+    @property
+    def prompt(self) -> str:
+        """Retorna o prompt ativo (customizado ou padrao)."""
+        return self._custom_prompt or _DEFAULT_PROMPT
+
+    def set_custom_prompt(self, prompt: str) -> None:
+        """Atualiza o prompt customizado em runtime."""
+        self._custom_prompt = prompt
+        logger.info("Prompt atualizado (%d chars).", len(prompt))
 
     def load_model(self) -> None:
         """Carrega o modelo Whisper (chamado uma vez no startup)."""
@@ -107,7 +118,7 @@ class Transcriber:
         segments, _info = self._model.transcribe(
             audio,
             language=self.config.language,
-            initial_prompt=_PUNCTUATION_PROMPT,
+            initial_prompt=self.prompt,
             condition_on_previous_text=False,
             beam_size=1,
             no_speech_threshold=0.6,
