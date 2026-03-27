@@ -9,7 +9,7 @@
 
 | Branch | Tipo | Ultimo commit | Estado |
 |---|---|---|---|
-| `main` | desenvolvimento ativo | `1ccc7ec` | v2 completa — Sprints 0-7 ✅ |
+| `main` | desenvolvimento ativo | `ff28d3e` | v3 completa — Sprints 0-12 ✅ |
 
 ---
 
@@ -134,7 +134,7 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| VOC-01 | Expandir initial_prompt com vocabulario de programacao | ⏳ | — | VOC-02 |
+| VOC-01 | Expandir initial_prompt com vocabulario de programacao | ✅ | — | VOC-02 |
 
 ---
 
@@ -142,10 +142,10 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| VOC-02 | Criar modulo voice_commands.py com engine de comandos | ⏳ | VOC-01 | VOC-03, VOC-04 |
-| VOC-03 | Implementar comandos estruturais e code shortcuts | ⏳ | VOC-02 | VOC-05 |
-| VOC-04 | Extender OutputHandler para keypresses (navegacao/controle) | ⏳ | VOC-02 | VOC-05 |
-| VOC-05 | Integrar voice_commands no pipeline do main.py | ⏳ | VOC-03, VOC-04 | VOC-06 |
+| VOC-02 | Criar modulo voice_commands.py com engine de comandos | ✅ | VOC-01 | VOC-03, VOC-04 |
+| VOC-03 | Implementar comandos estruturais e code shortcuts | ✅ | VOC-02 | VOC-05 |
+| VOC-04 | Extender OutputHandler para keypresses (navegacao/controle) | ✅ | VOC-02 | VOC-05 |
+| VOC-05 | Integrar voice_commands no pipeline do main.py | ✅ | VOC-03, VOC-04 | VOC-06 |
 
 ---
 
@@ -153,10 +153,35 @@
 
 | ID | Task | Status | Depende de | Desbloqueia |
 |---|---|---|---|---|
-| VOC-06 | Toggle de Code Mode no tray menu | ⏳ | VOC-05 | VOC-07 |
-| VOC-07 | Hotkey Ctrl+Alt+C para toggle code mode | ⏳ | VOC-06 | VOC-08 |
-| VOC-08 | Feedback visual (cor ciano quando code mode ativo) | ⏳ | VOC-06 | VOC-09 |
-| VOC-09 | Testes end-to-end + documentacao | ⏳ | VOC-08 | — |
+| VOC-06 | Toggle de Code Mode no tray menu | ✅ | VOC-05 | VOC-07 |
+| VOC-07 | Hotkey Ctrl+Alt+C para toggle code mode | ✅ | VOC-06 | VOC-08 |
+| VOC-08 | Feedback visual (cor ciano quando code mode ativo) | ✅ | VOC-06 | VOC-09 |
+| VOC-09 | Testes end-to-end + documentacao | ✅ | VOC-08 | — |
+
+---
+
+## Sprint 11 — Custom Prompt Profiles
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| PRF-01 | Criar modulo profiles.py — load/save/list profiles | ✅ | — | PRF-02 |
+| PRF-02 | Bootstrap de profiles built-in (Geral, Tech-Dev, Code Mode) | ✅ | PRF-01 | PRF-03 |
+| PRF-03 | Integrar profile no transcriber (prompt dinamico) | ✅ | PRF-02 | PRF-04 |
+| PRF-04 | Profile selector no tray menu (substitui code mode toggle) | ✅ | PRF-03 | PRF-05 |
+| PRF-05 | Code Mode como profile especial (ativa voice_commands) | ✅ | PRF-04 | GUI-01 |
+| ICO-01 | Redesenhar icone do tray com silhueta de microfone | ✅ | — | GUI-04 |
+
+---
+
+## Sprint 12 — GUI Window (tkinter)
+
+| ID | Task | Status | Depende de | Desbloqueia |
+|---|---|---|---|---|
+| GUI-01 | Janela basica tkinter (thread separada, show/hide/toggle) | ✅ | PRF-05 | GUI-02 |
+| GUI-02 | Log panel com QueueHandler (real-time, auto-scroll) | ✅ | GUI-01 | GUI-03 |
+| GUI-03 | Barra de controles (gravar, profile, modo, modelo dropdowns) | ✅ | GUI-02 | GUI-04 |
+| GUI-04 | Status bar + double-click tray abre/fecha janela | ✅ | GUI-03, ICO-01 | GUI-05 |
+| GUI-05 | Dark theme VS Code style + polimento visual | ✅ | GUI-04 | — |
 
 ---
 
@@ -171,10 +196,9 @@
 | **v2 Fase 1** — Integracao motor | Substituir faster-whisper pelo motor | 5 | ✅ |
 | **v2 Fase 2** — Modo Translate | Transcricao + traducao NLLB-200 | 6 | ✅ |
 | **v2 Fase 3** — Modo Voice + Build | TTS + prosodia + installer final | 7 | ✅ |
-| **v3 Fase 1** — Voice Coding: Prompt | Initial prompt tech expandido | 8 | 🏗️ |
-| **v3 Fase 2** — Voice Coding: Engine | Comandos de voz para codigo | 9 | ⏳ |
-| **v3 Fase 3** — Voice Coding: UI | Toggle, hotkey, feedback visual | 10 | ⏳ |
+| **v3 Fase 1** — Voice Coding | Prompt tech + engine de comandos + UI | 8-10 | ✅ |
+| **v3 Fase 2** — Profiles + GUI | Profiles customizaveis + janela tkinter | 11-12 | ✅ |
 
 ---
 
-*Ultima atualizacao: 2026-03-26 — v3 Voice Coding iniciado (Sprint 8).*
+*Ultima atualizacao: 2026-03-27 — v3 completa (Sprints 8-12), profiles + GUI.*
