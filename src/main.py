@@ -2,6 +2,7 @@
 
 import logging
 import os
+import queue
 import sys
 import time
 import threading
@@ -14,6 +15,7 @@ from src.config import Config, APP_NAME, AppMode
 from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
+from src.gui import SpeedOsperGUI, QueueLogHandler
 from src.hardware import detect_hardware, recommend_model
 from src.model_prefetch import prefetch_models_async
 from src.player import AudioPlayer
@@ -24,8 +26,8 @@ from src.voice_commands import VoiceCommandEngine
 logger = logging.getLogger("speedosper")
 
 
-def _setup_logging(config: Config) -> Path:
-    """Configura logging para arquivo e (se console disponivel) stdout."""
+def _setup_logging(config: Config, log_queue: queue.Queue | None = None) -> Path:
+    """Configura logging para arquivo, console (se disponivel) e GUI queue."""
     log_dir = Path(config.log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "speedosper.log"
@@ -36,6 +38,14 @@ def _setup_logging(config: Config) -> Path:
     # Adiciona console handler apenas se nao estiver em modo frozen (PyInstaller --windowed)
     if not getattr(sys, "frozen", False):
         handlers.append(logging.StreamHandler(sys.stdout))
+
+    # Handler para GUI (queue-based)
+    if log_queue is not None:
+        queue_handler = QueueLogHandler(log_queue)
+        queue_handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(name)s] %(message)s", datefmt="%H:%M:%S",
+        ))
+        handlers.append(queue_handler)
 
     logging.basicConfig(
         level=logging.INFO,
@@ -49,7 +59,7 @@ def _setup_logging(config: Config) -> Path:
 class SpeedOsper:
     """Orquestra gravacao, transcricao e saida de texto."""
 
-    def __init__(self, config: Config | None = None):
+    def __init__(self, config: Config | None = None, log_queue: queue.Queue | None = None):
         self.config = config or Config()
         self.transcriber = Transcriber(self.config)
         self.recorder = Recorder(self.config)
@@ -70,8 +80,30 @@ class SpeedOsper:
         self._hw = detect_hardware()
         self._recommended_model = recommend_model(self._hw)
 
-        # Lista nomes de profiles para o tray
-        profile_names = [p.name for p in list_profiles()]
+        # Lista nomes de profiles para o tray e GUI
+        self._profiles = list_profiles()
+        profile_names = [p.name for p in self._profiles]
+
+        from src.hardware import WHISPER_MODELS
+        model_names = list(WHISPER_MODELS.keys())
+
+        # GUI (janela tkinter — opcional, inicia escondida)
+        self._log_queue = log_queue
+        self._gui: SpeedOsperGUI | None = None
+        if log_queue is not None:
+            self._gui = SpeedOsperGUI(
+                log_queue=log_queue,
+                on_record_toggle=self._on_gui_record_toggle,
+                on_profile_change=self._change_profile,
+                on_mode_change=self._gui_change_mode,
+                on_model_change=self._change_model,
+                profile_names=profile_names,
+                mode_names=[m.value for m in AppMode],
+                model_names=model_names,
+                current_profile=self._active_profile.name,
+                current_mode=self.config.mode.value,
+                current_model=self.config.model,
+            )
 
         self._tray = TrayIcon(
             on_quit=self._request_quit,
@@ -81,6 +113,7 @@ class SpeedOsper:
             on_mode_change=self._change_mode,
             on_target_lang_change=self._change_target_lang,
             on_profile_change=self._change_profile,
+            on_activate=self._toggle_gui,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
             current_mode=self.config.mode,
@@ -145,6 +178,8 @@ class SpeedOsper:
         self.config.mode = mode
         logger.info("Modo alterado para: %s", mode.value)
         self._tray.notify(APP_NAME, f"Modo: {mode.value.capitalize()}")
+        if self._gui:
+            self._gui.update_mode(mode.value)
 
     def _change_target_lang(self, lang_code: str) -> None:
         """Troca o idioma alvo para traducao."""
@@ -175,23 +210,59 @@ class SpeedOsper:
         self.config.active_profile_name = profile_name
         self.transcriber.set_prompt(profile.prompt)
         self._tray.set_profile(profile.name, profile.code_mode)
+        if self._gui:
+            self._gui.update_profile(profile.name)
         code_suffix = " [Code]" if profile.code_mode else ""
         logger.info("Profile trocado para '%s'%s", profile.name, code_suffix)
         self._tray.notify(APP_NAME, f"Profile: {profile.name}{code_suffix}")
 
+    def _set_state(self, state: AppState) -> None:
+        """Atualiza estado no tray e no GUI."""
+        self._tray.set_state(state)
+        if self._gui:
+            # Mapeia AppState para label legivel
+            labels = {
+                AppState.LOADING: "Carregando...",
+                AppState.IDLE: "Idle",
+                AppState.RECORDING: "Gravando",
+                AppState.TRANSCRIBING: "Transcrevendo...",
+                AppState.READY_TO_COPY: "Texto pronto",
+                AppState.PLAYING: "Reproduzindo",
+            }
+            self._gui.update_state(labels.get(state, state.value))
+
+    def _toggle_gui(self) -> None:
+        """Alterna visibilidade da janela GUI (double-click no tray)."""
+        if self._gui:
+            self._gui.toggle()
+
+    def _on_gui_record_toggle(self) -> None:
+        """Callback do botao gravar no GUI."""
+        self._on_toggle()
+
+    def _gui_change_mode(self, mode_str: str) -> None:
+        """Callback do dropdown de modo no GUI (recebe string)."""
+        try:
+            mode = AppMode(mode_str)
+            self._change_mode(mode)
+        except ValueError:
+            logger.warning("Modo invalido do GUI: %s", mode_str)
+
     def _change_model(self, model_name: str) -> None:
         """Troca o modelo Whisper em background."""
         def _reload():
-            self._tray.set_state(AppState.LOADING)
+            self._set_state(AppState.LOADING)
             self._tray.notify(APP_NAME, f"Baixando/carregando modelo '{model_name}'...")
             try:
                 self.transcriber.reload_model(model_name)
-                self._tray.set_state(AppState.IDLE)
+                self._set_state(AppState.IDLE)
                 self._tray.notify(APP_NAME, f"Modelo '{model_name}' pronto!")
+                if self._gui:
+                    self._gui.update_model(model_name)
                 logger.info("Modelo trocado para '%s'.", model_name)
             except Exception as e:
                 logger.error("Erro ao trocar modelo: %s", e)
-                self._tray.set_state(AppState.IDLE)
+                self._set_state(AppState.IDLE)
                 self._tray.notify(APP_NAME, f"Erro ao carregar modelo: {e}")
 
         threading.Thread(target=_reload, daemon=True).start()
@@ -203,7 +274,7 @@ class SpeedOsper:
         if not self.recorder.is_recording:
             logger.info("Gravando (push-to-talk)...")
             self._cancel_ready_timer()
-            self._tray.set_state(AppState.RECORDING)
+            self._set_state(AppState.RECORDING)
             self.recorder.start()
 
     def _on_push_to_talk_release(self) -> None:
@@ -216,7 +287,7 @@ class SpeedOsper:
         if not self._toggle_active:
             self._toggle_active = True
             self._cancel_ready_timer()
-            self._tray.set_state(AppState.RECORDING)
+            self._set_state(AppState.RECORDING)
             logger.info("Gravando (toggle ON)...")
             self.recorder.start()
         else:
@@ -226,7 +297,7 @@ class SpeedOsper:
     def _process_recording(self) -> None:
         """Para gravacao e despacha para o pipeline do modo ativo."""
         t0 = time.perf_counter()
-        self._tray.set_state(AppState.TRANSCRIBING)
+        self._set_state(AppState.TRANSCRIBING)
         logger.info("Processando (modo=%s)...", self.config.mode.value)
 
         audio = self.recorder.stop()
@@ -245,11 +316,11 @@ class SpeedOsper:
             self.output.send(text)
             elapsed = time.perf_counter() - t0
             logger.info(">>> %s (%.1fs)", text, elapsed)
-            self._tray.set_state(AppState.READY_TO_COPY)
+            self._set_state(AppState.READY_TO_COPY)
             self._start_ready_timer()
         else:
             logger.info("Nenhum texto detectado.")
-            self._tray.set_state(AppState.IDLE)
+            self._set_state(AppState.IDLE)
 
     def _pipeline_scribe(self, audio) -> str:
         """Modo scribe: fala -> texto. Se code_mode, processa comandos."""
@@ -298,7 +369,7 @@ class SpeedOsper:
             )
             # Reproduz audio traduzido
             if len(result.samples) > 0:
-                self._tray.set_state(AppState.PLAYING)
+                self._set_state(AppState.PLAYING)
                 self.player.play(result.samples, result.sample_rate)
             return result.translated_text
         except Exception as e:
@@ -320,7 +391,7 @@ class SpeedOsper:
     def _ready_timeout(self) -> None:
         """Timeout do estado azul — volta ao idle."""
         if self._tray._state == AppState.READY_TO_COPY:
-            self._tray.set_state(AppState.IDLE)
+            self._set_state(AppState.IDLE)
 
     def _cancel_ready_timer(self) -> None:
         if self._ready_timer is not None:
@@ -398,8 +469,12 @@ class SpeedOsper:
 
     def run(self) -> None:
         """Inicia o loop principal com hotkeys."""
+        # Inicia GUI (escondida — abre com double-click no tray)
+        if self._gui:
+            self._gui.start()
+
         self._tray.start()
-        self._tray.set_state(AppState.LOADING)
+        self._set_state(AppState.LOADING)
 
         # Inicia listener antes do warm-up (Ctrl+Q ja funciona)
         self._listener = kb.Listener(
@@ -415,7 +490,7 @@ class SpeedOsper:
             self.transcriber.warm_up()
         except Exception as e:
             logger.error("Falha ao carregar modelo: %s", e, exc_info=True)
-            self._tray.set_state(AppState.IDLE)
+            self._set_state(AppState.IDLE)
             self._tray.notify(APP_NAME, f"Erro ao carregar modelo: {e}")
             # Permite trocar modelo pelo menu mesmo com erro
             self._quit_event.wait()
@@ -431,7 +506,7 @@ class SpeedOsper:
         logger.info("  Saida:        %s", self.config.output_mode)
         logger.info("  Sair:         Ctrl+Q")
 
-        self._tray.set_state(AppState.IDLE)
+        self._set_state(AppState.IDLE)
         self._tray.notify(APP_NAME, "Pronto! Ctrl+Alt+H para gravar.")
 
         # Prefetch de modelos em background (traducao, TTS)
@@ -446,6 +521,8 @@ class SpeedOsper:
         if self._listener.is_alive():
             self._listener.stop()
         self._tray.stop()
+        if self._gui:
+            self._gui.stop()
 
         if self.recorder.is_recording:
             self.recorder.stop()
@@ -506,14 +583,17 @@ def main():
         if arg == "--model" and i + 1 < len(sys.argv):
             config.model = sys.argv[i + 1]
 
-    log_file = _setup_logging(config)
+    # Queue para log real-time no GUI (--no-gui desabilita)
+    log_queue = None if "--no-gui" in sys.argv else queue.Queue(maxsize=1000)
+
+    log_file = _setup_logging(config, log_queue=log_queue)
     _mutex = _acquire_single_instance()
 
     logger.info("Hardware: GPU=%s (%d MB), RAM=%d MB", hw.gpu_name or "nenhuma", hw.gpu_vram_mb, hw.ram_mb)
     logger.info("Modelo recomendado: %s / Modelo selecionado: %s", recommended, config.model)
 
     try:
-        app = SpeedOsper(config)
+        app = SpeedOsper(config, log_queue=log_queue)
         app._log_file = log_file
         app.run()
     except Exception as e:

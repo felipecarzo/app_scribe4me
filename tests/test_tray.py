@@ -52,3 +52,22 @@ class TestTrayIcon:
         tray = TrayIcon(on_quit=lambda: quit_called.append(True))
         tray._quit_clicked(None, None)
         assert quit_called == [True]
+
+    def test_activate_callback(self):
+        activated = []
+        tray = TrayIcon(on_activate=lambda: activated.append(True))
+        tray._activate_clicked(None, None)
+        assert activated == [True]
+
+    def test_activate_callback_none(self):
+        """Sem callback nao levanta excecao."""
+        tray = TrayIcon()
+        tray._activate_clicked(None, None)
+
+    @patch("src.tray.pystray.Icon")
+    def test_start_sets_on_activate(self, mock_icon_cls):
+        cb = lambda: None
+        tray = TrayIcon(on_activate=cb)
+        tray.start()
+        icon_instance = mock_icon_cls.return_value
+        assert icon_instance.on_activate == cb

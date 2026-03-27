@@ -114,6 +114,7 @@ class TrayIcon:
         on_mode_change: Callable[[AppMode], None] | None = None,
         on_target_lang_change: Callable[[str], None] | None = None,
         on_profile_change: Callable[[str], None] | None = None,
+        on_activate: Callable | None = None,
         current_model: str = "large-v3",
         recommended_model: str = "large-v3",
         current_mode: AppMode = AppMode.SCRIBE,
@@ -130,6 +131,7 @@ class TrayIcon:
         self._on_mode_change = on_mode_change
         self._on_target_lang_change = on_target_lang_change
         self._on_profile_change = on_profile_change
+        self._on_activate = on_activate
         self._current_model = current_model
         self._recommended_model = recommended_model
         self._current_mode = current_mode
@@ -226,6 +228,7 @@ class TrayIcon:
                 pystray.Menu(*model_items),
             ),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Abrir janela", self._activate_clicked),
             pystray.MenuItem("Copiar ultimo texto", self._copy_last_clicked),
             pystray.MenuItem("Abrir log", self._open_log_clicked),
             pystray.Menu.SEPARATOR,
@@ -285,6 +288,9 @@ class TrayIcon:
             title=_TOOLTIPS[AppState.IDLE],
             menu=self._build_menu(),
         )
+        # Double-click no tray abre/fecha janela
+        if self._on_activate:
+            self._icon.on_activate = self._on_activate
         self._thread = threading.Thread(target=self._icon.run, daemon=True)
         self._thread.start()
 
@@ -384,6 +390,10 @@ class TrayIcon:
     def _open_log_clicked(self, icon, item) -> None:
         if self._on_open_log:
             self._on_open_log()
+
+    def _activate_clicked(self, icon, item) -> None:
+        if self._on_activate:
+            self._on_activate()
 
     def set_profile(self, profile_name: str, code_mode: bool) -> None:
         """Atualiza profile ativo no tray (chamado pelo main)."""
