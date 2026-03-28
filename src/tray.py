@@ -8,7 +8,7 @@ from typing import Callable
 from PIL import Image, ImageDraw
 import pystray
 
-from src.config import APP_NAME
+from src.config import APP_NAME, hotkey_display, load_hotkeys
 from src.hardware import WHISPER_MODELS, model_label
 
 logger = logging.getLogger("scribe4me.tray")
@@ -31,13 +31,18 @@ _COLORS = {
     AppState.READY_TO_COPY: (33, 150, 243), # azul
 }
 
-_TOOLTIPS = {
-    AppState.LOADING: f"{APP_NAME} — Carregando modelo...",
-    AppState.IDLE: f"{APP_NAME} — Pronto (Ctrl+Alt+H)",
-    AppState.RECORDING: f"{APP_NAME} — Gravando...",
-    AppState.TRANSCRIBING: f"{APP_NAME} — Transcrevendo...",
-    AppState.READY_TO_COPY: f"{APP_NAME} — Texto pronto (Ctrl+V)",
-}
+def _build_tooltips(hotkeys: dict[str, str] | None = None) -> dict[AppState, str]:
+    """Constroi tooltips com os atalhos atuais."""
+    if hotkeys is None:
+        hotkeys = load_hotkeys()
+    ptt = hotkey_display(hotkeys["push_to_talk"])
+    return {
+        AppState.LOADING: f"{APP_NAME} — Carregando modelo...",
+        AppState.IDLE: f"{APP_NAME} — Pronto ({ptt})",
+        AppState.RECORDING: f"{APP_NAME} — Gravando...",
+        AppState.TRANSCRIBING: f"{APP_NAME} — Transcrevendo...",
+        AppState.READY_TO_COPY: f"{APP_NAME} — Texto pronto (Ctrl+V)",
+    }
 
 
 def _draw_mic_silhouette(draw: ImageDraw.Draw, cx: int, cy: int, s: float, color="white"):
@@ -101,21 +106,28 @@ class TrayIcon:
         on_quit: Callable | None = None,
         on_copy_last: Callable | None = None,
         on_open_log: Callable | None = None,
+        on_open_log_dir: Callable | None = None,
         on_model_change: Callable[[str], None] | None = None,
         on_edit_prompt: Callable | None = None,
+        on_edit_hotkeys: Callable | None = None,
         on_help: Callable | None = None,
         current_model: str = "large",
         recommended_model: str = "large",
+        hotkeys: dict[str, str] | None = None,
     ):
         self._state = AppState.IDLE
         self._on_quit = on_quit
         self._on_copy_last = on_copy_last
         self._on_open_log = on_open_log
+        self._on_open_log_dir = on_open_log_dir
         self._on_model_change = on_model_change
         self._on_edit_prompt = on_edit_prompt
+        self._on_edit_hotkeys = on_edit_hotkeys
         self._on_help = on_help
         self._current_model = current_model
         self._recommended_model = recommended_model
+        self._hotkeys = hotkeys or load_hotkeys()
+        self._tooltips = _build_tooltips(self._hotkeys)
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
         self._blink_timer: threading.Timer | None = None
@@ -142,21 +154,27 @@ class TrayIcon:
                 )
             )
 
+        ptt = hotkey_display(self._hotkeys["push_to_talk"])
+        tog = hotkey_display(self._hotkeys["toggle"])
+        qt = hotkey_display(self._hotkeys["quit"])
+
         return pystray.Menu(
             pystray.MenuItem(APP_NAME, self._help_clicked),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Ctrl+Alt+H  —  Gravar (segura e fala)", None, enabled=False),
-            pystray.MenuItem("Ctrl+Alt+T  —  Toggle (iniciar/parar)", None, enabled=False),
-            pystray.MenuItem("Ctrl+Q            —  Sair", None, enabled=False),
+            pystray.MenuItem(f"{ptt}  —  Gravar (segura e fala)", None, enabled=False),
+            pystray.MenuItem(f"{tog}  —  Toggle (iniciar/parar)", None, enabled=False),
+            pystray.MenuItem(f"{qt}  —  Sair", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 f"Modelo: {self._current_model.capitalize()}",
                 pystray.Menu(*model_items),
             ),
             pystray.MenuItem("Editar prompt", self._edit_prompt_clicked),
+            pystray.MenuItem("Configurar atalhos", self._edit_hotkeys_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Copiar ultimo texto", self._copy_last_clicked),
-            pystray.MenuItem("Abrir log", self._open_log_clicked),
+            pystray.MenuItem("Log de hoje", self._open_log_clicked),
+            pystray.MenuItem("Pasta de logs", self._open_log_dir_clicked),
             pystray.MenuItem("Ajuda", self._help_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Sair", self._quit_clicked),
@@ -182,7 +200,7 @@ class TrayIcon:
         self._icon = pystray.Icon(
             name="scribe4me",
             icon=self._state_icon(AppState.IDLE),
-            title=_TOOLTIPS[AppState.IDLE],
+            title=self._tooltips[AppState.IDLE],
             menu=self._build_menu(),
         )
         self._thread = threading.Thread(target=self._icon.run, daemon=True)
@@ -200,7 +218,7 @@ class TrayIcon:
             return
 
         self._icon.icon = self._state_icon(state)
-        self._icon.title = _TOOLTIPS[state]
+        self._icon.title = self._tooltips[state]
 
         # Inicia piscar se carregando ou transcrevendo
         if state in (AppState.LOADING, AppState.TRANSCRIBING):
@@ -266,6 +284,14 @@ class TrayIcon:
 
     # --- Menu callbacks ---
 
+    def update_hotkeys(self, hotkeys: dict[str, str]) -> None:
+        """Atualiza hotkeys, tooltips e menu apos edicao."""
+        self._hotkeys = hotkeys
+        self._tooltips = _build_tooltips(hotkeys)
+        if self._icon is not None:
+            self._icon.title = self._tooltips[self._state]
+        self._update_menu()
+
     def _quit_clicked(self, icon, item) -> None:
         if self._on_quit:
             self._on_quit()
@@ -278,9 +304,17 @@ class TrayIcon:
         if self._on_open_log:
             self._on_open_log()
 
+    def _open_log_dir_clicked(self, icon, item) -> None:
+        if self._on_open_log_dir:
+            self._on_open_log_dir()
+
     def _edit_prompt_clicked(self, icon, item) -> None:
         if self._on_edit_prompt:
             self._on_edit_prompt()
+
+    def _edit_hotkeys_clicked(self, icon, item) -> None:
+        if self._on_edit_hotkeys:
+            self._on_edit_hotkeys()
 
     def _help_clicked(self, icon, item) -> None:
         if self._on_help:

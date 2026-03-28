@@ -1,7 +1,7 @@
 ; Scribe4me — Inno Setup installer script
 
 #define MyAppName "Scribe4me"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.3.0"
 #define MyAppPublisher "Scribe4me"
 #define MyAppExeName "Scribe4me.exe"
 #define MyAppDescription "Speech-to-text local com IA — transcreve sua voz em texto"
@@ -32,12 +32,12 @@ WizardSizePercent=120
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 MinVersion=10.0
-VersionInfoVersion=1.2.0.0
+VersionInfoVersion=1.3.0.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppDescription}
 VersionInfoCopyright={#MyAppCopyright}
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=1.2.0.0
+VersionInfoProductVersion=1.3.0.0
 
 [Languages]
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"

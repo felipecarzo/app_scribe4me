@@ -11,22 +11,28 @@ from pathlib import Path
 import pyperclip
 from pynput import keyboard as kb
 
-from src.config import Config, APP_NAME, GITHUB_URL
+from src.config import Config, APP_NAME, GITHUB_URL, load_hotkeys, parse_hotkey, hotkey_display
 from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
+from src.hotkey_editor import open_hotkey_editor
 from src.prompt_editor import open_prompt_editor
 from src.tray import TrayIcon, AppState
 
 logger = logging.getLogger("scribe4me")
 
 
-def _setup_logging(config: Config) -> Path:
-    """Configura logging para arquivo e (se console disponivel) stdout."""
+def _setup_logging(config: Config) -> tuple[Path, Path]:
+    """Configura logging para arquivo diario e (se console disponivel) stdout.
+
+    Retorna (log_dir, log_file_do_dia).
+    """
+    from datetime import date
+
     log_dir = Path(config.log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "scribe4me.log"
+    log_file = log_dir / f"{date.today().isoformat()}.log"
 
     handlers: list[logging.Handler] = [
         logging.FileHandler(log_file, encoding="utf-8"),
@@ -41,7 +47,7 @@ def _setup_logging(config: Config) -> Path:
         datefmt="%H:%M:%S",
         handlers=handlers,
     )
-    return log_file
+    return log_dir, log_file
 
 
 class Scribe4me:
@@ -57,24 +63,38 @@ class Scribe4me:
         self._listener: kb.Listener | None = None
         self._ready_timer: threading.Timer | None = None
         self._log_file: Path | None = None
+        self._log_dir: Path | None = None
 
         # Detecta hardware e recomenda modelo
         self._hw = detect_hardware()
         self._recommended_model = recommend_model(self._hw)
 
+        # Hotkeys dinamicos — carrega do config
+        self._hotkeys = load_hotkeys()
+        self._parse_all_hotkeys()
+
         self._tray = TrayIcon(
             on_quit=self._request_quit,
             on_copy_last=self._copy_last_text,
             on_open_log=self._open_log,
+            on_open_log_dir=self._open_log_dir,
             on_model_change=self._change_model,
             on_edit_prompt=self._edit_prompt,
+            on_edit_hotkeys=self._edit_hotkeys,
             on_help=self._open_help,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
+            hotkeys=self._hotkeys,
         )
 
         # Tracking de teclas modificadoras para detectar combinacoes
         self._pressed_keys: set = set()
+
+    def _parse_all_hotkeys(self) -> None:
+        """Faz parse dos hotkeys atuais em (modifiers, vk)."""
+        self._hk_ptt_mods, self._hk_ptt_vk = parse_hotkey(self._hotkeys["push_to_talk"])
+        self._hk_tog_mods, self._hk_tog_vk = parse_hotkey(self._hotkeys["toggle"])
+        self._hk_quit_mods, self._hk_quit_vk = parse_hotkey(self._hotkeys["quit"])
 
     # --- Callbacks do tray ---
 
@@ -96,9 +116,14 @@ class Scribe4me:
             self._tray.notify(APP_NAME, "Nenhum texto disponivel.")
 
     def _open_log(self) -> None:
-        """Abre o arquivo de log no editor padrao."""
+        """Abre o log do dia no editor padrao."""
         if self._log_file and self._log_file.exists():
             os.startfile(str(self._log_file))
+
+    def _open_log_dir(self) -> None:
+        """Abre a pasta de logs no Explorer."""
+        if self._log_dir and self._log_dir.exists():
+            os.startfile(str(self._log_dir))
 
     def _edit_prompt(self) -> None:
         """Abre a janela de edicao do prompt personalizado."""
@@ -109,6 +134,17 @@ class Scribe4me:
             logger.info("Prompt atualizado via editor (%s).", label)
 
         open_prompt_editor(on_save=_on_save)
+
+    def _edit_hotkeys(self) -> None:
+        """Abre a janela de edicao de atalhos."""
+        def _on_save(new_hotkeys: dict[str, str]):
+            self._hotkeys = new_hotkeys
+            self._parse_all_hotkeys()
+            self._tray.update_hotkeys(new_hotkeys)
+            self._tray.notify(APP_NAME, "Atalhos atualizados!")
+            logger.info("Hotkeys atualizados: %s", new_hotkeys)
+
+        open_hotkey_editor(on_save=_on_save)
 
     def _open_help(self) -> None:
         """Abre a pagina do projeto no GitHub."""
@@ -203,11 +239,6 @@ class Scribe4me:
 
     # --- pynput Listener ---
 
-    # Virtual key codes (Windows)
-    _VK_H = 72
-    _VK_T = 84
-    _VK_Q = 81
-
     @staticmethod
     def _get_vk(key) -> int | None:
         """Extrai o virtual key code de uma tecla."""
@@ -215,18 +246,34 @@ class Scribe4me:
             return key.vk
         if hasattr(key, "value") and hasattr(key.value, "vk"):
             return key.value.vk
-        # KeyCode.from_char
         if hasattr(key, "char") and key.char is not None:
             return ord(key.char.upper())
         return None
+
+    def _active_mods(self) -> set[str]:
+        """Retorna set dos modificadores atualmente pressionados."""
+        mods = set()
+        if any(k in self._pressed_keys for k in (kb.Key.ctrl, kb.Key.ctrl_l, kb.Key.ctrl_r)):
+            mods.add("ctrl")
+        if any(k in self._pressed_keys for k in (kb.Key.alt, kb.Key.alt_l, kb.Key.alt_r)):
+            mods.add("alt")
+        if any(k in self._pressed_keys for k in (kb.Key.shift, kb.Key.shift_l, kb.Key.shift_r)):
+            mods.add("shift")
+        return mods
+
+    def _match_hotkey(self, vk: int | None, required_mods: set[str], required_vk: int | None) -> bool:
+        """Verifica se a tecla e modificadores batem com um hotkey configurado."""
+        if vk is None or required_vk is None:
+            return False
+        return vk == required_vk and required_mods <= self._active_mods()
 
     def _on_press(self, key) -> None:
         """Callback de tecla pressionada."""
         self._pressed_keys.add(key)
         vk = self._get_vk(key)
 
-        # Ctrl+Q -> quit (funciona mesmo durante loading)
-        if vk == self._VK_Q and self._mod_ctrl():
+        # Quit — funciona mesmo durante loading
+        if self._match_hotkey(vk, self._hk_quit_mods, self._hk_quit_vk):
             self._request_quit()
             return
 
@@ -234,13 +281,13 @@ class Scribe4me:
         if self._tray._state == AppState.LOADING:
             return
 
-        # Ctrl+Alt+T -> toggle
-        if vk == self._VK_T and self._mod_ctrl() and self._mod_alt():
+        # Toggle
+        if self._match_hotkey(vk, self._hk_tog_mods, self._hk_tog_vk):
             self._on_toggle()
             return
 
-        # Ctrl+Alt+H -> push-to-talk start
-        if vk == self._VK_H and self._mod_ctrl() and self._mod_alt():
+        # Push-to-talk start
+        if self._match_hotkey(vk, self._hk_ptt_mods, self._hk_ptt_vk):
             self._on_push_to_talk_press()
             return
 
@@ -248,25 +295,11 @@ class Scribe4me:
         """Callback de tecla solta."""
         vk = self._get_vk(key)
 
-        # H release -> push-to-talk stop
-        if vk == self._VK_H and self.recorder.is_recording and not self._toggle_active:
+        # Push-to-talk stop — verifica se a tecla solta e a do PTT
+        if vk == self._hk_ptt_vk and self.recorder.is_recording and not self._toggle_active:
             self._on_push_to_talk_release()
 
         self._pressed_keys.discard(key)
-
-    def _mod_ctrl(self) -> bool:
-        """Verifica se Ctrl esta pressionado."""
-        return any(
-            k in self._pressed_keys
-            for k in (kb.Key.ctrl, kb.Key.ctrl_l, kb.Key.ctrl_r)
-        )
-
-    def _mod_alt(self) -> bool:
-        """Verifica se Alt esta pressionado."""
-        return any(
-            k in self._pressed_keys
-            for k in (kb.Key.alt, kb.Key.alt_l, kb.Key.alt_r)
-        )
 
     # --- Run ---
 
@@ -297,13 +330,13 @@ class Scribe4me:
             return
 
         logger.info("Pronto!")
-        logger.info("  Push-to-talk: Ctrl+Alt+H (segura e fala)")
-        logger.info("  Toggle:       Ctrl+Alt+T (aperta pra iniciar/parar)")
+        logger.info("  Push-to-talk: %s (segura e fala)", hotkey_display(self._hotkeys["push_to_talk"]))
+        logger.info("  Toggle:       %s (aperta pra iniciar/parar)", hotkey_display(self._hotkeys["toggle"]))
         logger.info("  Saida:        %s", self.config.output_mode)
-        logger.info("  Sair:         Ctrl+Q")
+        logger.info("  Sair:         %s", hotkey_display(self._hotkeys["quit"]))
 
         self._tray.set_state(AppState.IDLE)
-        self._tray.notify(APP_NAME, "Pronto! Ctrl+Shift+H para gravar.")
+        self._tray.notify(APP_NAME, f"Pronto! {hotkey_display(self._hotkeys['push_to_talk'])} para gravar.")
 
         # Aguarda quit
         self._quit_event.wait()
@@ -363,7 +396,7 @@ def main():
         if arg == "--model" and i + 1 < len(sys.argv):
             config.model = sys.argv[i + 1]
 
-    log_file = _setup_logging(config)
+    log_dir, log_file = _setup_logging(config)
     _mutex = _acquire_single_instance()
 
     logger.info("Hardware: GPU=%s (%d MB), RAM=%d MB", hw.gpu_name or "nenhuma", hw.gpu_vram_mb, hw.ram_mb)
@@ -371,6 +404,7 @@ def main():
 
     try:
         app = Scribe4me(config)
+        app._log_dir = log_dir
         app._log_file = log_file
         app.run()
     except Exception as e:
