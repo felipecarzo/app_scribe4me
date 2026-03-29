@@ -15,11 +15,12 @@ from src.config import (
 _ACTION_LABELS = {
     "push_to_talk": "Gravar (segura e fala)",
     "toggle": "Toggle (iniciar/parar)",
+    "cancel": "Cancelar gravacao",
     "quit": "Sair",
 }
 
 # Ordem de exibicao
-_ACTION_ORDER = ["push_to_talk", "toggle", "quit"]
+_ACTION_ORDER = ["push_to_talk", "toggle", "cancel", "quit"]
 
 
 class _HotkeyCaptureButton(tk.Button):
@@ -136,7 +137,7 @@ def _show_editor(on_save=None):
     """Cria e exibe a janela tkinter de edicao de atalhos."""
     root = tk.Tk()
     root.title(f"{APP_NAME} — Configurar atalhos")
-    root.geometry("420x260")
+    root.geometry("420x300")
     root.resizable(False, False)
 
     root.attributes("-topmost", True)

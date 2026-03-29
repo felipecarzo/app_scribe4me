@@ -21,6 +21,7 @@ _CONFIG_FILE = APP_DATA_DIR / "config.json"
 DEFAULT_HOTKEYS = {
     "push_to_talk": "<ctrl>+<alt>+h",
     "toggle": "<ctrl>+<alt>+t",
+    "cancel": "<ctrl>+<alt>+c",
     "quit": "<ctrl>+q",
 }
 
@@ -67,6 +68,18 @@ def save_hotkeys(hotkeys: dict[str, str]) -> None:
     """Salva hotkeys no config.json."""
     data = _load_config_data()
     data["hotkeys"] = hotkeys
+    _save_config_data(data)
+
+
+def load_output_mode() -> str:
+    """Carrega modo de saida do config.json (cursor ou clipboard)."""
+    return _load_config_data().get("output_mode", "cursor")
+
+
+def save_output_mode(mode: str) -> None:
+    """Salva modo de saida no config.json."""
+    data = _load_config_data()
+    data["output_mode"] = mode
     _save_config_data(data)
 
 
@@ -126,12 +139,13 @@ class Config:
     # Hotkeys (carregados do config.json ou defaults)
     hotkey_push_to_talk: str = field(default_factory=lambda: load_hotkeys()["push_to_talk"])
     hotkey_toggle: str = field(default_factory=lambda: load_hotkeys()["toggle"])
+    hotkey_cancel: str = field(default_factory=lambda: load_hotkeys()["cancel"])
     hotkey_quit: str = field(default_factory=lambda: load_hotkeys()["quit"])
 
     # Saida
     # "cursor" = cola direto no cursor ativo (simula digitacao)
     # "clipboard" = copia pro clipboard
-    output_mode: str = "cursor"
+    output_mode: str = field(default_factory=load_output_mode)
 
     # Audio
     sample_rate: int = 16000

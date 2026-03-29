@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6" alt="Windows">
   <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License">
@@ -31,7 +31,7 @@ Simples assim. Sem login, sem internet, sem assinatura.
 
 <p align="center">
   <a href="../../releases/latest">
-    <img src="https://img.shields.io/badge/Baixar%20Scribe4me-v1.2.0-brightgreen?style=for-the-badge&logo=windows" alt="Download">
+    <img src="https://img.shields.io/badge/Baixar%20Scribe4me-v1.3.0-brightgreen?style=for-the-badge&logo=windows" alt="Download">
   </a>
 </p>
 
@@ -49,8 +49,9 @@ Baixe o instalador na [pagina de Releases](../../releases/latest) e execute. A i
 
 **Transcricao**
 - Whisper (OpenAI) roda 100% local via [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
-- Push-to-talk (Ctrl+Alt+H) — segura e fala
-- Toggle (Ctrl+Alt+T) — aperta pra iniciar/parar
+- Push-to-talk — segura e fala
+- Toggle — aperta pra iniciar/parar
+- Cancelar gravacao — aborta sem processar
 - Pontuacao automatica — virgulas, pontos e maiusculas
 - Prompt personalizado — configure o estilo de transcricao
 
@@ -61,7 +62,9 @@ Baixe o instalador na [pagina de Releases](../../releases/latest) e execute. A i
 - Tray icon com estados visuais (verde/vermelho/amarelo/azul)
 - Deteccao automatica de hardware (GPU/CPU)
 - Troca de modelo pelo menu do tray
-- Modo cursor (cola direto) ou clipboard
+- Modo cursor (cola direto) ou clipboard — alternavel pelo menu
+- **Atalhos personalizaveis** — configure pelo menu do tray
+- Logs diarios permanentes — recupere textos de qualquer dia
 - Ajuda integrada com link para documentacao
 
 </td>
@@ -72,10 +75,13 @@ Baixe o instalador na [pagina de Releases](../../releases/latest) e execute. A i
 
 ## Atalhos
 
-| Atalho | Acao |
-|--------|------|
+Todos os atalhos podem ser personalizados pelo menu do tray (**Configurar atalhos**).
+
+| Atalho padrao | Acao |
+|---------------|------|
 | **Ctrl+Alt+H** | Push-to-talk (segura e fala) |
 | **Ctrl+Alt+T** | Toggle gravacao (iniciar/parar) |
+| **Ctrl+Alt+C** | Cancelar gravacao |
 | **Ctrl+Q** | Sair do aplicativo |
 
 ---
@@ -151,6 +157,7 @@ src/
   tray.py            — icone na bandeja do sistema
   postprocess.py     — pos-processamento de pontuacao
   prompt_editor.py   — editor de prompt personalizado
+  hotkey_editor.py   — editor de atalhos personalizaveis
 
 tests/               — testes unitarios e de integracao
 scripts/             — utilitarios (geracao de icone)

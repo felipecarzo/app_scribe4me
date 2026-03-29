@@ -110,10 +110,12 @@ class TrayIcon:
         on_model_change: Callable[[str], None] | None = None,
         on_edit_prompt: Callable | None = None,
         on_edit_hotkeys: Callable | None = None,
+        on_toggle_output: Callable | None = None,
         on_help: Callable | None = None,
         current_model: str = "large",
         recommended_model: str = "large",
         hotkeys: dict[str, str] | None = None,
+        output_mode: str = "cursor",
     ):
         self._state = AppState.IDLE
         self._on_quit = on_quit
@@ -123,10 +125,12 @@ class TrayIcon:
         self._on_model_change = on_model_change
         self._on_edit_prompt = on_edit_prompt
         self._on_edit_hotkeys = on_edit_hotkeys
+        self._on_toggle_output = on_toggle_output
         self._on_help = on_help
         self._current_model = current_model
         self._recommended_model = recommended_model
         self._hotkeys = hotkeys or load_hotkeys()
+        self._output_mode = output_mode
         self._tooltips = _build_tooltips(self._hotkeys)
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
@@ -156,18 +160,27 @@ class TrayIcon:
 
         ptt = hotkey_display(self._hotkeys["push_to_talk"])
         tog = hotkey_display(self._hotkeys["toggle"])
+        cnc = hotkey_display(self._hotkeys["cancel"])
         qt = hotkey_display(self._hotkeys["quit"])
+
+        output_label = "Colar no cursor" if self._output_mode == "cursor" else "So clipboard (Ctrl+V)"
 
         return pystray.Menu(
             pystray.MenuItem(APP_NAME, self._help_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(f"{ptt}  —  Gravar (segura e fala)", None, enabled=False),
             pystray.MenuItem(f"{tog}  —  Toggle (iniciar/parar)", None, enabled=False),
+            pystray.MenuItem(f"{cnc}  —  Cancelar gravacao", None, enabled=False),
             pystray.MenuItem(f"{qt}  —  Sair", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 f"Modelo: {self._current_model.capitalize()}",
                 pystray.Menu(*model_items),
+            ),
+            pystray.MenuItem(
+                output_label,
+                self._toggle_output_clicked,
+                checked=lambda item: self._output_mode == "cursor",
             ),
             pystray.MenuItem("Editar prompt", self._edit_prompt_clicked),
             pystray.MenuItem("Configurar atalhos", self._edit_hotkeys_clicked),
@@ -284,6 +297,11 @@ class TrayIcon:
 
     # --- Menu callbacks ---
 
+    def update_output_mode(self, mode: str) -> None:
+        """Atualiza o modo de saida e reconstroi o menu."""
+        self._output_mode = mode
+        self._update_menu()
+
     def update_hotkeys(self, hotkeys: dict[str, str]) -> None:
         """Atualiza hotkeys, tooltips e menu apos edicao."""
         self._hotkeys = hotkeys
@@ -315,6 +333,10 @@ class TrayIcon:
     def _edit_hotkeys_clicked(self, icon, item) -> None:
         if self._on_edit_hotkeys:
             self._on_edit_hotkeys()
+
+    def _toggle_output_clicked(self, icon, item) -> None:
+        if self._on_toggle_output:
+            self._on_toggle_output()
 
     def _help_clicked(self, icon, item) -> None:
         if self._on_help:

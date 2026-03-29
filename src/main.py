@@ -11,7 +11,10 @@ from pathlib import Path
 import pyperclip
 from pynput import keyboard as kb
 
-from src.config import Config, APP_NAME, GITHUB_URL, load_hotkeys, parse_hotkey, hotkey_display
+from src.config import (
+    Config, APP_NAME, GITHUB_URL,
+    load_hotkeys, save_output_mode, parse_hotkey, hotkey_display,
+)
 from src.recorder import Recorder
 from src.transcriber import Transcriber
 from src.clipboard import OutputHandler
@@ -81,10 +84,12 @@ class Scribe4me:
             on_model_change=self._change_model,
             on_edit_prompt=self._edit_prompt,
             on_edit_hotkeys=self._edit_hotkeys,
+            on_toggle_output=self._toggle_output_mode,
             on_help=self._open_help,
             current_model=self.config.model,
             recommended_model=self._recommended_model,
             hotkeys=self._hotkeys,
+            output_mode=self.config.output_mode,
         )
 
         # Tracking de teclas modificadoras para detectar combinacoes
@@ -94,6 +99,7 @@ class Scribe4me:
         """Faz parse dos hotkeys atuais em (modifiers, vk)."""
         self._hk_ptt_mods, self._hk_ptt_vk = parse_hotkey(self._hotkeys["push_to_talk"])
         self._hk_tog_mods, self._hk_tog_vk = parse_hotkey(self._hotkeys["toggle"])
+        self._hk_cancel_mods, self._hk_cancel_vk = parse_hotkey(self._hotkeys["cancel"])
         self._hk_quit_mods, self._hk_quit_vk = parse_hotkey(self._hotkeys["quit"])
 
     # --- Callbacks do tray ---
@@ -134,6 +140,18 @@ class Scribe4me:
             logger.info("Prompt atualizado via editor (%s).", label)
 
         open_prompt_editor(on_save=_on_save)
+
+    def _toggle_output_mode(self) -> None:
+        """Alterna entre modo cursor e clipboard."""
+        if self.config.output_mode == "cursor":
+            self.config.output_mode = "clipboard"
+        else:
+            self.config.output_mode = "cursor"
+        save_output_mode(self.config.output_mode)
+        self._tray.update_output_mode(self.config.output_mode)
+        label = "Colar no cursor" if self.config.output_mode == "cursor" else "So clipboard (Ctrl+V)"
+        self._tray.notify(APP_NAME, f"Modo: {label}")
+        logger.info("Modo de saida: %s", self.config.output_mode)
 
     def _edit_hotkeys(self) -> None:
         """Abre a janela de edicao de atalhos."""
@@ -184,7 +202,7 @@ class Scribe4me:
             self._process_recording()
 
     def _on_toggle(self) -> None:
-        """Win+Shift+H — alterna gravacao on/off."""
+        """Toggle — alterna gravacao on/off."""
         if not self._toggle_active:
             self._toggle_active = True
             self._cancel_ready_timer()
@@ -194,6 +212,15 @@ class Scribe4me:
         else:
             self._toggle_active = False
             self._process_recording()
+
+    def _on_cancel(self) -> None:
+        """Cancela a gravacao em andamento sem processar."""
+        if self.recorder.is_recording:
+            self._toggle_active = False
+            self.recorder.stop()  # descarta o audio
+            self._tray.set_state(AppState.IDLE)
+            self._tray.notify(APP_NAME, "Gravacao cancelada.")
+            logger.info("Gravacao cancelada pelo usuario.")
 
     def _process_recording(self) -> None:
         """Para gravacao, transcreve e envia texto."""
@@ -281,6 +308,11 @@ class Scribe4me:
         if self._tray._state == AppState.LOADING:
             return
 
+        # Cancel — cancela gravacao em andamento
+        if self._match_hotkey(vk, self._hk_cancel_mods, self._hk_cancel_vk):
+            self._on_cancel()
+            return
+
         # Toggle
         if self._match_hotkey(vk, self._hk_tog_mods, self._hk_tog_vk):
             self._on_toggle()
@@ -332,6 +364,7 @@ class Scribe4me:
         logger.info("Pronto!")
         logger.info("  Push-to-talk: %s (segura e fala)", hotkey_display(self._hotkeys["push_to_talk"]))
         logger.info("  Toggle:       %s (aperta pra iniciar/parar)", hotkey_display(self._hotkeys["toggle"]))
+        logger.info("  Cancelar:     %s (cancela gravacao)", hotkey_display(self._hotkeys["cancel"]))
         logger.info("  Saida:        %s", self.config.output_mode)
         logger.info("  Sair:         %s", hotkey_display(self._hotkeys["quit"]))
 
