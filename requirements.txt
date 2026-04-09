@@ -1,0 +1,22 @@
+# Scribe4me — Speech-to-text local com Whisper
+# Python 3.12 + CUDA
+
+# Core — Whisper STT (CTranslate2, ~4x mais rapido que openai-whisper)
+faster-whisper>=1.0.0
+
+# Audio — gravacao do microfone
+sounddevice>=0.5.1
+numpy>=1.26.0
+
+# Clipboard/input — enviar texto para cursor ativo
+pyperclip>=1.9.0
+pynput>=1.7.7
+
+# UI — tray icon e notificacoes
+pystray>=0.19.5
+Pillow>=10.0.0
+
+# API transcription — backends externos (opcional)
+httpx>=0.27.0          # HTTP para OpenAI/Groq/Gemini/Deepgram batch
+websocket-client>=1.8.0  # WebSocket para Deepgram realtime
+soundfile>=0.12.1       # Converter numpy -> WAV in-memory
