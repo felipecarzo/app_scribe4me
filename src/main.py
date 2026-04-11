@@ -15,7 +15,6 @@ from pynput import keyboard as kb
 from src.config import (
     Config, APP_NAME, GITHUB_URL,
     load_hotkeys, load_api_keys, load_api_config,
-    save_output_mode, save_api_config,
     parse_hotkey, hotkey_display,
 )
 from src.recorder import Recorder
@@ -25,9 +24,7 @@ from src.realtime_manager import DeepgramRealtimeManager
 from src.realtime_overlay import RealtimeOverlay
 from src.clipboard import OutputHandler
 from src.hardware import detect_hardware, recommend_model
-from src.hotkey_editor import open_hotkey_editor
-from src.prompt_editor import open_prompt_editor
-from src.api_settings_editor import open_api_settings_editor
+from src.settings_window import open_settings_window
 from src.tray import TrayIcon, AppState
 
 logger = logging.getLogger("scribe4me")
@@ -97,17 +94,9 @@ class Scribe4me:
             on_copy_last=self._copy_last_text,
             on_open_log=self._open_log,
             on_open_log_dir=self._open_log_dir,
-            on_model_change=self._change_model,
-            on_edit_prompt=self._edit_prompt,
-            on_edit_hotkeys=self._edit_hotkeys,
-            on_toggle_output=self._toggle_output_mode,
+            on_open_settings=self._open_settings,
             on_help=self._open_help,
-            on_api_settings=self._edit_api_settings,
-            current_model=self.config.model,
-            recommended_model=self._recommended_model,
             hotkeys=self._hotkeys,
-            output_mode=self.config.output_mode,
-            api_backend=self._api_cfg["backend"],
         )
 
         # Tracking de teclas modificadoras para detectar combinacoes
@@ -149,47 +138,22 @@ class Scribe4me:
         if self._log_dir and self._log_dir.exists():
             platform.open_path(self._log_dir)
 
-    def _edit_prompt(self) -> None:
-        """Abre a janela de edicao do prompt personalizado."""
-        def _on_save(prompt: str):
-            self.transcriber.set_custom_prompt(prompt)
-            label = "personalizado" if prompt else "padrao"
-            self._tray.notify(APP_NAME, f"Prompt {label} salvo.")
-            logger.info("Prompt atualizado via editor (%s).", label)
-
-        open_prompt_editor(on_save=_on_save)
-
-    def _toggle_output_mode(self) -> None:
-        """Alterna entre modo cursor e clipboard."""
-        if self.config.output_mode == "cursor":
-            self.config.output_mode = "clipboard"
-        else:
-            self.config.output_mode = "cursor"
-        save_output_mode(self.config.output_mode)
-        self._tray.update_output_mode(self.config.output_mode)
-        label = "Colar no cursor" if self.config.output_mode == "cursor" else "So clipboard (Ctrl+V)"
-        self._tray.notify(APP_NAME, f"Modo: {label}")
-        logger.info("Modo de saida: %s", self.config.output_mode)
-
-    def _edit_hotkeys(self) -> None:
-        """Abre a janela de edicao de atalhos."""
-        def _on_save(new_hotkeys: dict[str, str]):
+    def _open_settings(self) -> None:
+        """Abre a janela de configuracoes unificada."""
+        def _on_hotkeys(new_hotkeys: dict[str, str]):
             self._hotkeys = new_hotkeys
             self._parse_all_hotkeys()
             self._tray.update_hotkeys(new_hotkeys)
             self._tray.notify(APP_NAME, "Atalhos atualizados!")
             logger.info("Hotkeys atualizados: %s", new_hotkeys)
 
-        open_hotkey_editor(on_save=_on_save)
+        def _on_prompt(content: str):
+            self.transcriber.set_custom_prompt(content)
+            label = "personalizado" if content else "padrao"
+            self._tray.notify(APP_NAME, f"Prompt {label} salvo.")
+            logger.info("Prompt atualizado (%s).", label)
 
-    def _open_help(self) -> None:
-        """Abre a pagina do projeto no GitHub."""
-        webbrowser.open(GITHUB_URL)
-        logger.info("Ajuda aberta no navegador.")
-
-    def _edit_api_settings(self) -> None:
-        """Abre a janela de configuracao de API."""
-        def _on_save(backend: str, realtime: bool):
+        def _on_api(backend: str, realtime: bool):
             self._api_cfg = {"backend": backend, "realtime": realtime}
             self._api_keys = load_api_keys()
             self.config.api_backend = backend
@@ -197,13 +161,31 @@ class Scribe4me:
             self._api_transcriber = create_api_transcriber(
                 backend, self._api_keys, self.config.language
             )
-            self._tray.update_api_backend(backend)
             mode = "realtime" if realtime else "batch"
             label = backend if backend != "local" else "local (Whisper)"
             self._tray.notify(APP_NAME, f"Backend: {label} ({mode})")
-            logger.info("API backend alterado para '%s' (realtime=%s).", backend, realtime)
+            logger.info("API backend: '%s' (realtime=%s).", backend, realtime)
 
-        open_api_settings_editor(on_save=_on_save)
+        def _on_output_mode(mode: str):
+            self.config.output_mode = mode
+            label = "Colar no cursor" if mode == "cursor" else "So clipboard (Ctrl+V)"
+            self._tray.notify(APP_NAME, f"Modo: {label}")
+            logger.info("Modo de saida: %s", mode)
+
+        open_settings_window(
+            on_save_hotkeys=_on_hotkeys,
+            on_save_prompt=_on_prompt,
+            on_save_api=_on_api,
+            on_change_model=self._change_model,
+            on_change_output_mode=_on_output_mode,
+            current_model=self.config.model,
+            recommended_model=self._recommended_model,
+        )
+
+    def _open_help(self) -> None:
+        """Abre a pagina do projeto no GitHub."""
+        webbrowser.open(GITHUB_URL)
+        logger.info("Ajuda aberta no navegador.")
 
     def _change_model(self, model_name: str) -> None:
         """Troca o modelo Whisper em background."""
@@ -212,6 +194,7 @@ class Scribe4me:
             self._tray.notify(APP_NAME, f"Baixando/carregando modelo '{model_name}'...")
             try:
                 self.transcriber.reload_model(model_name)
+                self.config.model = model_name
                 self._tray.set_state(AppState.IDLE)
                 self._tray.notify(APP_NAME, f"Modelo '{model_name}' pronto!")
                 logger.info("Modelo trocado para '%s'.", model_name)
@@ -386,7 +369,7 @@ class Scribe4me:
 
     def _ready_timeout(self) -> None:
         """Timeout do estado azul — volta ao idle."""
-        if self._tray._state == AppState.READY_TO_COPY:
+        if self._tray.state == AppState.READY_TO_COPY:
             self._tray.set_state(AppState.IDLE)
 
     def _cancel_ready_timer(self) -> None:
@@ -435,7 +418,7 @@ class Scribe4me:
             return
 
         # Bloqueia hotkeys durante loading
-        if self._tray._state == AppState.LOADING:
+        if self._tray.state == AppState.LOADING:
             return
 
         # Cancel — cancela gravacao em andamento

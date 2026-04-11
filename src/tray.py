@@ -9,7 +9,6 @@ from PIL import Image, ImageDraw
 import pystray
 
 from src.config import APP_NAME, hotkey_display, load_hotkeys
-from src.hardware import WHISPER_MODELS, model_label
 
 logger = logging.getLogger("scribe4me.tray")
 
@@ -107,34 +106,18 @@ class TrayIcon:
         on_copy_last: Callable | None = None,
         on_open_log: Callable | None = None,
         on_open_log_dir: Callable | None = None,
-        on_model_change: Callable[[str], None] | None = None,
-        on_edit_prompt: Callable | None = None,
-        on_edit_hotkeys: Callable | None = None,
-        on_toggle_output: Callable | None = None,
+        on_open_settings: Callable | None = None,
         on_help: Callable | None = None,
-        on_api_settings: Callable | None = None,
-        current_model: str = "large",
-        recommended_model: str = "large",
         hotkeys: dict[str, str] | None = None,
-        output_mode: str = "cursor",
-        api_backend: str = "local",
     ):
         self._state = AppState.IDLE
         self._on_quit = on_quit
         self._on_copy_last = on_copy_last
         self._on_open_log = on_open_log
         self._on_open_log_dir = on_open_log_dir
-        self._on_model_change = on_model_change
-        self._on_edit_prompt = on_edit_prompt
-        self._on_edit_hotkeys = on_edit_hotkeys
-        self._on_toggle_output = on_toggle_output
+        self._on_open_settings = on_open_settings
         self._on_help = on_help
-        self._on_api_settings = on_api_settings
-        self._current_model = current_model
-        self._recommended_model = recommended_model
         self._hotkeys = hotkeys or load_hotkeys()
-        self._output_mode = output_mode
-        self._api_backend = api_backend
         self._tooltips = _build_tooltips(self._hotkeys)
         self._icon: pystray.Icon | None = None
         self._thread: threading.Thread | None = None
@@ -147,28 +130,10 @@ class TrayIcon:
 
     def _build_menu(self) -> pystray.Menu:
         """Constroi o menu de contexto."""
-        # Submenu de modelos
-        model_items = []
-        for name in WHISPER_MODELS:
-            label = model_label(name, self._recommended_model)
-            # Checkmark no modelo atual
-            checked = name == self._current_model
-            model_items.append(
-                pystray.MenuItem(
-                    label,
-                    self._make_model_callback(name),
-                    checked=lambda item, n=name: n == self._current_model,
-                    radio=True,
-                )
-            )
-
         ptt = hotkey_display(self._hotkeys["push_to_talk"])
         tog = hotkey_display(self._hotkeys["toggle"])
         cnc = hotkey_display(self._hotkeys["cancel"])
         qt = hotkey_display(self._hotkeys["quit"])
-
-        output_label = "Colar no cursor" if self._output_mode == "cursor" else "So clipboard (Ctrl+V)"
-        api_label = f"API: {self._api_backend.capitalize()}"
 
         return pystray.Menu(
             pystray.MenuItem(APP_NAME, self._help_clicked),
@@ -178,18 +143,7 @@ class TrayIcon:
             pystray.MenuItem(f"{cnc}  —  Cancelar gravacao", None, enabled=False),
             pystray.MenuItem(f"{qt}  —  Sair", None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem(
-                f"Modelo: {self._current_model.capitalize()}",
-                pystray.Menu(*model_items),
-            ),
-            pystray.MenuItem(
-                output_label,
-                self._toggle_output_clicked,
-                checked=lambda item: self._output_mode == "cursor",
-            ),
-            pystray.MenuItem("Editar prompt", self._edit_prompt_clicked),
-            pystray.MenuItem("Configurar atalhos", self._edit_hotkeys_clicked),
-            pystray.MenuItem(api_label, self._api_settings_clicked),
+            pystray.MenuItem("Configuracoes...", self._settings_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Copiar ultimo texto", self._copy_last_clicked),
             pystray.MenuItem("Log de hoje", self._open_log_clicked),
@@ -199,15 +153,9 @@ class TrayIcon:
             pystray.MenuItem("Sair", self._quit_clicked),
         )
 
-    def _make_model_callback(self, model_name: str):
-        """Cria callback para selecao de modelo."""
-        def callback(icon, item):
-            if model_name != self._current_model:
-                self._current_model = model_name
-                self._update_menu()
-                if self._on_model_change:
-                    self._on_model_change(model_name)
-        return callback
+    @property
+    def state(self) -> AppState:
+        return self._state
 
     def _update_menu(self) -> None:
         """Atualiza o menu apos troca de modelo."""
@@ -303,16 +251,6 @@ class TrayIcon:
 
     # --- Menu callbacks ---
 
-    def update_api_backend(self, backend: str) -> None:
-        """Atualiza o label do backend de API no menu."""
-        self._api_backend = backend
-        self._update_menu()
-
-    def update_output_mode(self, mode: str) -> None:
-        """Atualiza o modo de saida e reconstroi o menu."""
-        self._output_mode = mode
-        self._update_menu()
-
     def update_hotkeys(self, hotkeys: dict[str, str]) -> None:
         """Atualiza hotkeys, tooltips e menu apos edicao."""
         self._hotkeys = hotkeys
@@ -337,21 +275,9 @@ class TrayIcon:
         if self._on_open_log_dir:
             self._on_open_log_dir()
 
-    def _edit_prompt_clicked(self, icon, item) -> None:
-        if self._on_edit_prompt:
-            self._on_edit_prompt()
-
-    def _edit_hotkeys_clicked(self, icon, item) -> None:
-        if self._on_edit_hotkeys:
-            self._on_edit_hotkeys()
-
-    def _toggle_output_clicked(self, icon, item) -> None:
-        if self._on_toggle_output:
-            self._on_toggle_output()
-
-    def _api_settings_clicked(self, icon, item) -> None:
-        if self._on_api_settings:
-            self._on_api_settings()
+    def _settings_clicked(self, icon, item) -> None:
+        if self._on_open_settings:
+            self._on_open_settings()
 
     def _help_clicked(self, icon, item) -> None:
         if self._on_help:
