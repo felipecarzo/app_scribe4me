@@ -1,0 +1,65 @@
+name: Build macOS
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Convert PNG to ICNS
+        run: |
+          # Cria iconset a partir do PNG de 256x256
+          mkdir -p assets/scribe4me.iconset
+          sips -z 16 16   assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_16x16.png
+          sips -z 32 32   assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_16x16@2x.png
+          sips -z 32 32   assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_32x32.png
+          sips -z 64 64   assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_32x32@2x.png
+          sips -z 128 128 assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_128x128.png
+          sips -z 256 256 assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_128x128@2x.png
+          sips -z 256 256 assets/scribe4me_256.png --out assets/scribe4me.iconset/icon_256x256.png
+          iconutil -c icns assets/scribe4me.iconset -o assets/scribe4me.icns
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller scribe4me_macos.spec --noconfirm
+
+      - name: Create DMG
+        run: |
+          hdiutil create \
+            -volname "Scribe4me" \
+            -srcfolder "dist/Scribe4me.app" \
+            -ov \
+            -format UDZO \
+            "Scribe4me_macOS_1.5.0.dmg"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Scribe4me-macOS
+          path: Scribe4me_macOS_1.5.0.dmg
+          retention-days: 30
+
+      - name: Upload to Release (se for tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Scribe4me_macOS_1.5.0.dmg

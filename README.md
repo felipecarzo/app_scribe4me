@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.5.0-blue" alt="Version">
-  <img src="https://img.shields.io/badge/platform-Windows%20|%20Linux-0078D6" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Windows%20|%20Linux%20|%20macOS-0078D6" alt="Platform">
   <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License">
   <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/felipecarzo/app_scribe4me?label=download&color=brightgreen" alt="Download"></a>
@@ -38,6 +38,18 @@ Simples assim. Sem login, sem internet, sem assinatura.
 </p>
 
 Baixe o instalador `.exe` na [pagina de Releases](../../releases/latest) e execute. A instalacao leva menos de 1 minuto.
+
+### macOS
+
+<p align="center">
+  <a href="../../releases/latest">
+    <img src="https://img.shields.io/badge/Baixar%20Scribe4me-macOS-lightgrey?style=for-the-badge&logo=apple" alt="Download macOS">
+  </a>
+</p>
+
+Baixe o arquivo `.dmg` na [pagina de Releases](../../releases/latest), abra e arraste o `Scribe4me.app` para a pasta Aplicativos.
+
+> **Primeira execucao:** o macOS pode exibir um aviso de seguranca. Va em `Preferencias do Sistema > Privacidade e Seguranca` e clique em "Abrir mesmo assim". Alem disso, conceda permissao de microfone quando solicitado.
 
 ### Linux
 
@@ -86,10 +98,10 @@ rm ~/.local/bin/Scribe4me ~/.local/share/applications/Scribe4me.desktop
 
 **Interface**
 - Tray icon com estados visuais (verde/vermelho/amarelo/azul)
+- **Janela de configuracoes unificada** — modelo, atalhos, prompt e API em um so lugar
 - Deteccao automatica de hardware (GPU/CPU)
-- Troca de modelo pelo menu do tray
-- Modo cursor (cola direto) ou clipboard — alternavel pelo menu
-- **Atalhos personalizaveis** — configure pelo menu do tray
+- Modo cursor (cola direto) ou clipboard — alternavel nas configuracoes
+- **Atalhos personalizaveis** — reconfigure qualquer tecla pela janela de configuracoes
 - Logs diarios permanentes — recupere textos de qualquer dia
 - Ajuda integrada com link para documentacao
 
@@ -101,7 +113,7 @@ rm ~/.local/bin/Scribe4me ~/.local/share/applications/Scribe4me.desktop
 
 ## Atalhos
 
-Todos os atalhos podem ser personalizados pelo menu do tray (**Configurar atalhos**).
+Todos os atalhos podem ser personalizados em **Configuracoes** (botao direito no tray > Configuracoes... > aba Atalhos).
 
 | Atalho padrao | Acao |
 |---------------|------|
@@ -109,6 +121,21 @@ Todos os atalhos podem ser personalizados pelo menu do tray (**Configurar atalho
 | **Ctrl+Alt+T** | Toggle gravacao (iniciar/parar) |
 | **Ctrl+Alt+C** | Cancelar gravacao |
 | **Ctrl+Q** | Sair do aplicativo |
+
+---
+
+## Configuracoes
+
+Clique com o botao direito no **icone do tray** e selecione **Configuracoes...**
+
+A janela e dividida em quatro abas:
+
+| Aba | O que configura |
+|-----|-----------------|
+| **Geral** | Modelo Whisper e modo de saida (cursor / clipboard) |
+| **Atalhos** | Recaptura qualquer atalho — basta clicar e pressionar a combinacao |
+| **Prompt** | Texto de instrucao personalizado para o Whisper |
+| **API** | Backend de transcricao, API keys e modo realtime (Deepgram) |
 
 ---
 
@@ -128,10 +155,11 @@ Por padrao o Scribe4me transcreve 100% offline. Se quiser mais velocidade — ou
 ### Como configurar
 
 1. Clique com o botao direito no **icone do tray**
-2. Clique em **"API: Local"** (ou o backend atual)
-3. No dropdown, selecione o backend desejado
-4. Cole a API key no campo correspondente
-5. Clique em **Salvar**
+2. Clique em **Configuracoes...**
+3. Va para a aba **API**
+4. Selecione o backend no dropdown
+5. Cole a API key no campo correspondente
+6. Clique em **Salvar**
 
 O app troca imediatamente para o novo backend — sem reiniciar.
 
@@ -150,9 +178,10 @@ O app troca imediatamente para o novo backend — sem reiniciar.
 
 Com o backend **Deepgram** configurado, voce pode ativar o modo **realtime**:
 
-1. Na janela de configuracao de API, selecione **Deepgram**
-2. Marque **"Ativar transcricao em tempo real"**
-3. Salve
+1. Va em **Configuracoes... > aba API**
+2. Selecione **Deepgram**
+3. Marque **"Ativar transcricao em tempo real"**
+4. Salve
 
 No modo realtime, ao pressionar o atalho de gravacao, um overlay aparece na parte inferior da tela exibindo o texto parcial enquanto voce fala. Ao soltar a tecla (ou parar o toggle), o texto final e enviado ao cursor ou clipboard normalmente.
 
@@ -162,7 +191,7 @@ No modo realtime, ao pressionar o atalho de gravacao, um overlay aparece na part
 
 ## Modelos Whisper
 
-O app detecta seu hardware e recomenda o melhor modelo. Troque pelo menu do tray (botao direito no icone).
+O app detecta seu hardware e recomenda o melhor modelo. Troque em **Configuracoes... > aba Geral**.
 
 | Modelo | Tamanho | VRAM minima | Qualidade |
 |--------|---------|-------------|-----------|
@@ -181,13 +210,18 @@ O app detecta seu hardware e recomenda o melhor modelo. Troque pelo menu do tray
 - Microfone
 - GPU NVIDIA com CUDA (opcional — funciona em CPU, mais lento)
 
+**macOS:**
+- macOS 12 Monterey ou superior (Apple Silicon e Intel)
+- Microfone
+- Permissao de acessibilidade (para hotkeys globais) e microfone
+
 **Linux:**
 - Distribuicao com X11 ou XWayland (Ubuntu, Fedora, Mint, etc.)
 - Microfone
 - `xclip`, `libportaudio2`, `libappindicator3-1`
 - GPU NVIDIA com CUDA (opcional — funciona em CPU, mais lento)
 
-> **Nota:** Hotkeys globais requerem X11 ou XWayland. Wayland puro sem XWayland nao e suportado no momento.
+> **Nota Linux:** Hotkeys globais requerem X11 ou XWayland. Wayland puro sem XWayland nao e suportado no momento.
 
 ---
 
@@ -206,7 +240,7 @@ pip install -r requirements.txt
 python run_scribe4me.py
 ```
 
-**Linux:**
+**macOS / Linux:**
 
 ```bash
 git clone https://github.com/felipecarzo/app_scribe4me.git
@@ -229,10 +263,20 @@ python run_scribe4me.py
 
 ```bash
 pip install pyinstaller
-pyinstaller scribe4me.spec --distpath dist --workpath build_scribe4me
+pyinstaller scribe4me.spec --noconfirm
 ```
 
 Para gerar o instalador, instale o [Inno Setup 6](https://jrsoftware.org/isdl.php) e compile `scribe4me_installer.iss`.
+
+**macOS (.app + .dmg):**
+
+O build macOS roda automaticamente via GitHub Actions ao criar uma tag `v*`. Para buildar manualmente em um Mac:
+
+```bash
+pip install pyinstaller
+pyinstaller scribe4me_macos.spec --noconfirm
+hdiutil create -volname "Scribe4me" -srcfolder dist/Scribe4me.app -ov -format UDZO Scribe4me_macOS.dmg
+```
 
 **Linux (AppImage):**
 
@@ -265,14 +309,12 @@ src/
   transcriber_api.py    — backends de API (OpenAI/Groq/Gemini/Deepgram)
   realtime_manager.py   — streaming WebSocket Deepgram (realtime)
   realtime_overlay.py   — overlay flutuante de texto parcial
-  api_settings_editor.py — UI de configuracao de API keys
+  settings_window.py    — janela de configuracoes unificada (tkinter)
   clipboard.py          — envio do texto (cursor ou clipboard)
   hardware.py           — deteccao de GPU/RAM
   tray.py               — icone na bandeja do sistema
   postprocess.py        — pos-processamento de pontuacao
-  prompt_editor.py      — editor de prompt personalizado
-  hotkey_editor.py      — editor de atalhos personalizaveis
-  platform/             — abstracao de plataforma (Windows/Linux)
+  platform/             — abstracao de plataforma (Windows / Linux / macOS)
 
 tests/               — testes unitarios e de integracao
 scripts/             — build AppImage + instalador Linux

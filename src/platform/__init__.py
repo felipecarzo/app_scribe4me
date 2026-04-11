@@ -11,6 +11,8 @@ import sys
 
 if sys.platform == "win32":
     from src.platform._windows import WindowsBackend as _Backend
+elif sys.platform == "darwin":
+    from src.platform._macos import MacOSBackend as _Backend
 else:
     from src.platform._linux import LinuxBackend as _Backend
 

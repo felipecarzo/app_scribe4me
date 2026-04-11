@@ -1,6 +1,7 @@
 """System tray icon com indicador de estado e notificacoes."""
 
 import logging
+import sys
 import threading
 from enum import Enum
 from typing import Callable
@@ -163,15 +164,29 @@ class TrayIcon:
             self._icon.menu = self._build_menu()
 
     def start(self) -> None:
-        """Inicia o tray icon em thread separada."""
+        """Cria o tray icon.
+
+        No Windows/Linux inicia em thread separada.
+        No macOS o pystray exige a main thread — chame run_blocking() apos start().
+        """
         self._icon = pystray.Icon(
             name="scribe4me",
             icon=self._state_icon(AppState.IDLE),
             title=self._tooltips[AppState.IDLE],
             menu=self._build_menu(),
         )
-        self._thread = threading.Thread(target=self._icon.run, daemon=True)
-        self._thread.start()
+        if sys.platform != "darwin":
+            self._thread = threading.Thread(target=self._icon.run, daemon=True)
+            self._thread.start()
+
+    def run_blocking(self) -> None:
+        """Roda o tray no thread atual (bloqueia ate icon.stop() ser chamado).
+
+        Deve ser chamado a partir da main thread no macOS.
+        No-op se o icon ainda nao foi criado.
+        """
+        if self._icon is not None:
+            self._icon.run()
 
     def set_state(self, state: AppState) -> None:
         """Atualiza cor, tooltip e notificacao do icone."""

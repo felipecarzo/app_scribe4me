@@ -448,9 +448,12 @@ class Scribe4me:
 
     # --- Run ---
 
-    def run(self) -> None:
-        """Inicia o loop principal com hotkeys."""
-        self._tray.start()
+    def _run_app_logic(self) -> None:
+        """Loop principal: hotkeys, modelo, transcricao.
+
+        Pode ser executado diretamente (Windows/Linux) ou em thread separada (macOS,
+        onde a main thread precisa ficar livre para o pystray/Cocoa event loop).
+        """
         self._tray.set_state(AppState.LOADING)
 
         # Inicia listener antes do warm-up (Ctrl+Q ja funciona)
@@ -501,6 +504,22 @@ class Scribe4me:
 
         if self.recorder.is_recording:
             self.recorder.stop()
+
+    def run(self) -> None:
+        """Inicia o tray e o loop principal.
+
+        No macOS o pystray precisa rodar na main thread (Cocoa event loop).
+        A logica da aplicacao e movida para uma thread separada e o metodo
+        run_blocking() bloqueia a main thread ate o quit ser sinalizado.
+        """
+        self._tray.start()
+
+        if sys.platform == "darwin":
+            t = threading.Thread(target=self._run_app_logic, daemon=True)
+            t.start()
+            self._tray.run_blocking()  # bloqueia a main thread (exigido pelo Cocoa)
+        else:
+            self._run_app_logic()
 
 
 def _acquire_single_instance():
