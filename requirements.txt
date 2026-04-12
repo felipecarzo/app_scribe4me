@@ -20,3 +20,7 @@ Pillow>=10.0.0
 httpx>=0.27.0          # HTTP para OpenAI/Groq/Gemini/Deepgram batch
 websocket-client>=1.8.0  # WebSocket para Deepgram realtime
 soundfile>=0.12.1       # Converter numpy -> WAV in-memory
+
+# UI Premium (CustomTkinter)
+customtkinter>=5.2.2
+darkdetect>=0.8.0

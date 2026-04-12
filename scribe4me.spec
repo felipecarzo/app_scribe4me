@@ -14,12 +14,21 @@ BASE = os.path.abspath('.')
 import faster_whisper as _fw
 _FW_DIR = os.path.dirname(_fw.__file__)
 
+# Detecta o diretorio do customtkinter (UI premium)
+import customtkinter as _ctk
+_CTK_DIR = os.path.dirname(_ctk.__file__)
+
+import darkdetect as _dd
+_DD_DIR = os.path.dirname(_dd.__file__)
+
 a = Analysis(
     ['run_scribe4me.py'],
     pathex=[BASE],
     binaries=[],
     datas=[
         (os.path.join(_FW_DIR, 'assets'), os.path.join('faster_whisper', 'assets')),
+        (_CTK_DIR, 'customtkinter'),
+        (_DD_DIR, 'darkdetect'),
         (os.path.join(BASE, 'assets', 'scribe4me_256.png'), 'assets'),
     ],
     hiddenimports=[
@@ -35,6 +44,8 @@ a = Analysis(
         'httpx',
         'websocket',
         'soundfile',
+        'customtkinter',
+        'darkdetect',
     ],
     hookspath=[],
     hooksconfig={},
