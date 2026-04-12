@@ -1,6 +1,6 @@
 # ROADMAP — Scribe4me
 
-> Atualizado em: 2026-04-11
+> Atualizado em: 2026-04-12
 
 ---
 
@@ -45,4 +45,4 @@
 
 ---
 
-_Ultima atualizacao: 2026-04-11 — configuracoes unificadas + suporte macOS_
+_Ultima atualizacao: 2026-04-12 — rebuild Release v1.5.0 (customtkinter), inicio Scribe4me v2.0 (Tauri + Svelte) em repo separado_
