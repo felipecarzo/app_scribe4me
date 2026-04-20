@@ -1,0 +1,23 @@
+# Force LF line endings for all text files
+* text=auto eol=lf
+
+# Explicitly LF
+*.py eol=lf
+*.md eol=lf
+*.txt eol=lf
+*.spec eol=lf
+*.iss eol=lf
+*.yml eol=lf
+*.yaml eol=lf
+*.json eol=lf
+*.toml eol=lf
+*.cfg eol=lf
+*.ini eol=lf
+*.sh eol=lf
+.gitignore eol=lf
+.gitattributes eol=lf
+
+# Keep CRLF for Windows-only files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
